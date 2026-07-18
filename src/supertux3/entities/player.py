@@ -15,9 +15,10 @@ RIGHT_KEYS = (pygame.K_RIGHT, pygame.K_d)
 JUMP_KEYS = (pygame.K_SPACE, pygame.K_UP, pygame.K_w)
 DUCK_KEYS = (pygame.K_DOWN, pygame.K_s)
 
-HITBOX_W, HITBOX_H = 12, 22
-SPRITE_OFF_X = (HITBOX_W - 20) // 2   # Sprite ist 20 breit
-SPRITE_OFF_Y = HITBOX_H - 24          # Sprite ist 24 hoch, unten bündig
+SPRITE_W, SPRITE_H = 40, 48
+HITBOX_W, HITBOX_H = 24, 44
+SPRITE_OFF_X = (HITBOX_W - SPRITE_W) // 2   # Sprite mittig auf Hitbox
+SPRITE_OFF_Y = HITBOX_H - SPRITE_H          # unten bündig
 
 
 class Player(Entity):

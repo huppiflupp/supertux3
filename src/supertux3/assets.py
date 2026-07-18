@@ -11,13 +11,13 @@ import pygame
 from .settings import IMAGE_DIR, TILE
 from .engine.spritesheet import load_image, slice_strip, slice_grid
 
-# --- geteilte Sprite-Spezifikation --------------------------------------
-PENGU_FW, PENGU_FH = 20, 24
+# --- geteilte Sprite-Spezifikation (HD, 32px-Kacheln) -------------------
+PENGU_FW, PENGU_FH = 40, 48
 # Reihenfolge der Frames im Streifen characters/pengu.png
 PENGU_LAYOUT = ["idle0", "idle1", "walk0", "walk1", "walk2", "walk3", "jump", "fall", "duck"]
-COIN_FW, COIN_FH = 12, 12
+COIN_FW, COIN_FH = 24, 24
 COIN_FRAMES = 6
-SNOWBALL_FW, SNOWBALL_FH = 18, 16
+SNOWBALL_FW, SNOWBALL_FH = 36, 32
 SNOWBALL_LAYOUT = ["walk0", "walk1", "flat"]
 
 

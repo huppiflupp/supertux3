@@ -11,8 +11,8 @@ from .entity import Entity
 from ..engine.animation import Animation
 from ..settings import TILE
 
-SNOW_W, SNOW_H = 16, 14
-SPEED = 34.0
+SNOW_W, SNOW_H = 32, 28
+SPEED = 68.0
 
 
 class Snowball(Entity):

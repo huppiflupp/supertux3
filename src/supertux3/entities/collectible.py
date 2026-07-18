@@ -8,7 +8,7 @@ import pygame
 from .entity import Entity
 from ..engine.animation import Animation
 
-COIN_W = COIN_H = 12
+COIN_W = COIN_H = 24
 
 
 class Coin(Entity):
@@ -21,7 +21,7 @@ class Coin(Entity):
     def update(self, dt: float, level) -> None:
         self.spin.update(dt)
         self.t += dt * 3.0
-        self.y = self.base_y + math.sin(self.t) * 2.0
+        self.y = self.base_y + math.sin(self.t) * 4.0
 
     def draw(self, surface: pygame.Surface, camera) -> None:
         ox, oy = camera.offset

@@ -39,7 +39,8 @@ PYTHONPATH=src python -m supertux3
 | Thema | Entscheidung | Warum |
 |------|--------------|-------|
 | Sprache/Engine | Python 3.14 + **pygame-ce 2.5.7** | Schnellster Weg zu einem spielbaren Prototyp; SuperTux2 ist C++/SDL und wäre ein Wochen-Port. pygame-ce hat native cp314-Wheels. |
-| Renderauflösung | intern **480×270**, per `pygame.SCALED` hochskaliert | Knackiger Pixel-Look, auflösungsunabhängig, integer-scaling. |
+| Renderauflösung | intern **960×540** (Kachel 32px, wie SuperTux2), seitenverhältnistreu aufs Fenster skaliert | „Gute Grafik" bei gleichem Sichtfeld (30 Kacheln). Physik skaliert mit → Spielgefühl identisch zum 16px-Prototyp. |
+| Grafik-Detailgrad | HD, **supersampled** (4× gezeichnet, LANCZOS herunter) | Weiche, schattierte Cartoon-Sprites statt harter Pixel — SuperTux2-orientiert. |
 | Physik | **fester Zeitschritt** (1/60 s), Achsen-getrennte AABB-Kollision | Deterministisches Spielgefühl auf jeder Hardware. |
 | Spielfigur-Grafik | **prozedurale Pixel-Art** (PIL), nicht Stable Diffusion | SD/FLUX liefert keine konsistenten, spielfertigen Animations-Frames mit Alpha; prozedural = konsistent, klein, versionierbar. |
 | Hintergründe/Titel | **ComfyUI + FLUX-schnell** (lokale RTX 5080) | Dort ist Diffusion stark: weiche, stimmungsvolle Kulissen. Weicher BG + scharfer Pixel-Vordergrund = klassischer Parallax-Look. |
@@ -124,8 +125,9 @@ Alle Assets sind **reproduzierbar** — nichts ist „von Hand gemalt".
 
 - **Pixel-Art:** `tools/asset_pipeline/gen_pixelart.py`. Die Frame-Maße dort
   müssen exakt zu `src/supertux3/assets.py` passen (Spezifikation oben in beiden
-  Dateien dokumentiert): `pengu` 20×24 (9 Frames), `coin` 12×12 (6), `snowball`
-  18×16 (3), Kachelsatz 16×16 (7 Kacheln, ID 0 = leer).
+  Dateien dokumentiert): `pengu` 40×48 (9 Frames), `coin` 24×24 (6), `snowball`
+  36×32 (3), Kachelsatz 32×32 (7 Kacheln, ID 0 = leer). Gezeichnet wird
+  supersampled (4×) und geglättet heruntergerechnet (`Pen`-Klasse).
 - **Audio:** `tools/asset_pipeline/gen_audio.py` (numpy-Synthese; OGG-Export via
   ffmpeg, SFX als WAV).
 - **FLUX-Hintergründe:** siehe `docs/asset_pipeline.md`. ComfyUI liegt unter

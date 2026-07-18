@@ -1,39 +1,89 @@
 #!/usr/bin/env python3
-"""Prozeduraler Pixel-Art-Generator für SuperTux3.
+"""HD-Grafik-Generator für SuperTux3 (32-px-Kacheln, SuperTux2-orientiert).
 
-Erzeugt spielfertige, konsistente Sprites/Kacheln in der internen Auflösung
-(16-px-Kacheln). Das Spiel skaliert alles per Nearest-Neighbor hoch, daher wird
-hier bewusst in Zielgröße (klein) gezeichnet, nicht herunterskaliert.
+Gezeichnet wird supersampled (4x) und geglättet heruntergerechnet -> weiche,
+schattierte Cartoon-Grafik statt harter Pixel. Alle Designs sind eigenständig
+(kein SuperTux2-Asset wird kopiert).
 
 Ausgabe -> assets/images/{tiles,characters,collectibles,enemies,props}/
 
-Die Frame-Maße müssen zu src/supertux3/assets.py passen:
-  pengu  : 9 Frames à 20x24  (idle0,idle1,walk0-3,jump,fall,duck)
-  coin   : 6 Frames à 12x12
-  snowball: 3 Frames à 18x16 (walk0,walk1,flat)
-  tileset: 7 Kacheln à 16x16 (0=leer .. 6)
+Frame-Maße (müssen zu src/supertux3/assets.py passen):
+  pengu   : 9 Frames à 40x48
+  coin    : 6 Frames à 24x24
+  snowball: 3 Frames à 36x32
+  tileset : 7 Kacheln à 32x32 (0=leer .. 6)
 """
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 IMG = ROOT / "assets" / "images"
+SS = 4  # Supersampling
 
 # --- Palette -------------------------------------------------------------
-BODY = (34, 38, 52, 255)
-BODY_HI = (58, 64, 84, 255)
-BELLY = (245, 248, 255, 255)
-ORANGE = (255, 176, 46, 255)
-ORANGE_D = (214, 122, 22, 255)
-SCARF = (222, 66, 74, 255)
-SCARF_D = (176, 42, 52, 255)
+OUT = (20, 22, 32, 255)          # Kontur
+BODY = (40, 46, 66, 255)
+BODY_LO = (26, 30, 46, 255)
+BODY_HI = (74, 84, 112, 255)
+BELLY = (247, 250, 255, 255)
+BELLY_SH = (206, 216, 234, 255)
+BEAK = (255, 178, 44, 255)
+BEAK_HI = (255, 214, 130, 255)
+BEAK_LO = (210, 120, 22, 255)
+SCARF = (226, 64, 72, 255)
+SCARF_LO = (174, 40, 52, 255)
+SCARF_HI = (246, 122, 122, 255)
+FOOT = (255, 170, 40, 255)
+FOOT_LO = (208, 116, 20, 255)
 WHITE = (255, 255, 255, 255)
-PUP = (24, 26, 36, 255)
+PUP = (26, 28, 40, 255)
 NONE = (0, 0, 0, 0)
+
+
+class Pen:
+    """Zeichnet in Zielkoordinaten, intern supersampled; result() glättet."""
+
+    def __init__(self, w: int, h: int, ss: int = SS):
+        self.w, self.h, self.ss = w, h, ss
+        self.img = Image.new("RGBA", (w * ss, h * ss), NONE)
+        self.d = ImageDraw.Draw(self.img)
+
+    def _b(self, box):
+        return [v * self.ss for v in box]
+
+    def _p(self, pts):
+        return [(x * self.ss, y * self.ss) for x, y in pts]
+
+    def ellipse(self, box, **kw):
+        self.d.ellipse(self._b(box), **kw)
+
+    def rect(self, box, **kw):
+        self.d.rectangle(self._b(box), **kw)
+
+    def rounded(self, box, r, **kw):
+        self.d.rounded_rectangle(self._b(box), radius=r * self.ss, **kw)
+
+    def poly(self, pts, **kw):
+        self.d.polygon(self._p(pts), **kw)
+
+    def line(self, pts, width=1, **kw):
+        self.d.line(self._p(pts), width=int(width * self.ss), **kw)
+
+    def arc(self, box, a, b, width=1, **kw):
+        self.d.arc(self._b(box), a, b, width=int(width * self.ss), **kw)
+
+    def result(self) -> Image.Image:
+        return self.img.resize((self.w, self.h), Image.LANCZOS)
+
+
+def _lcg(seed):
+    x = seed & 0x7FFFFFFF
+    while True:
+        x = (x * 1103515245 + 12345) & 0x7FFFFFFF
+        yield x / 0x7FFFFFFF
 
 
 def _save(img: Image.Image, sub: str, name: str) -> None:
@@ -43,255 +93,302 @@ def _save(img: Image.Image, sub: str, name: str) -> None:
     print(f"  {sub}/{name}  {img.size}")
 
 
-# =========================================================================
-#  Spieler „Pengu"
-# =========================================================================
-def draw_pengu(lfoot: int = 0, rfoot: int = 0, arms_up: bool = False,
-               squash: int = 0, blink: bool = False) -> Image.Image:
-    img = Image.new("RGBA", (20, 24), NONE)
-    d = ImageDraw.Draw(img)
-    top = 2 + squash
-    bottom = 22
+def _sheet(frames, fw, fh):
+    sheet = Image.new("RGBA", (fw * len(frames), fh), NONE)
+    for i, f in enumerate(frames):
+        sheet.paste(f, (i * fw, 0), f)
+    return sheet
 
-    # Flossen (Arme)
-    ay = top + 7 - (5 if arms_up else 0)
-    d.ellipse([1, ay, 5, ay + 7], fill=BODY)
-    d.ellipse([14, ay, 18, ay + 7], fill=BODY)
 
-    # Körper + Kopf als eine Silhouette
-    d.ellipse([3, top, 16, bottom], fill=BODY)
-    d.ellipse([4, top, 15, top + 10], fill=BODY)
-    # leichte Aufhellung oben
-    d.ellipse([6, top + 1, 12, top + 5], fill=BODY_HI)
+# =========================================================================
+#  Spieler „Pengu"  (40x48)
+# =========================================================================
+def draw_pengu(lf=0.0, rf=0.0, llift=0.0, rlift=0.0, arms_up=False,
+               squash=0.0, blink=False, breathe=0.0) -> Image.Image:
+    p = Pen(40, 48)
+    top = 5 + squash - breathe
+    bot = 46
+
+    # Flossen
+    ay = top + 8 - (7 if arms_up else 0)
+    for fx0, fx1 in ((2.5, 8), (32, 37.5)):
+        p.ellipse([fx0 - .8, ay - .8, fx1 + .8, ay + 14 + .8], fill=OUT)
+        p.ellipse([fx0, ay, fx1, ay + 14], fill=BODY)
+        p.ellipse([fx0 + .5, ay + 1, fx1 - 1.5, ay + 8], fill=BODY_HI)
+
+    # Körper-Silhouette + Kontur
+    p.ellipse([5, top - 1, 35, bot + 1], fill=OUT)
+    p.ellipse([6, top, 34, bot], fill=BODY)
+    # untere Schattierung
+    p.ellipse([7, top + 20, 33, bot - 1], fill=BODY_LO)
+    p.ellipse([6.5, top, 34, bot - 6], fill=BODY)  # überdeckt Schatten oben wieder
+    # Kopf-Glanz
+    p.ellipse([11, top + 2, 24, top + 15], fill=BODY_HI)
 
     # Bauch
-    d.ellipse([6, top + 8, 13, bottom - 1], fill=BELLY)
+    p.ellipse([11, top + 13, 30, bot - 1], fill=BELLY)
+    p.ellipse([11.5, top + 15, 20, bot - 2], fill=BELLY_SH)   # linker Schatten
+    p.ellipse([13.5, top + 14, 30, bot - 1], fill=BELLY)      # rechts wieder hell
 
-    # Augen
-    ey = top + 4
+    # Augen (Blick leicht nach vorn/rechts)
+    ey = top + 8
     if blink:
-        d.line([7, ey + 1, 9, ey + 1], fill=PUP)
-        d.line([11, ey + 1, 13, ey + 1], fill=PUP)
+        p.line([(15, ey + 2), (19, ey + 2)], width=1.4, fill=PUP)
+        p.line([(23, ey + 2), (27, ey + 2)], width=1.4, fill=PUP)
     else:
-        d.ellipse([7, ey, 9, ey + 3], fill=WHITE)
-        d.ellipse([11, ey, 13, ey + 3], fill=WHITE)
-        d.point([(8, ey + 1), (12, ey + 1)], fill=PUP)
+        for ex in (17, 25):
+            p.ellipse([ex - 3, ey - 3.5, ex + 3, ey + 3.5], fill=WHITE)
+            p.ellipse([ex - 3, ey - 3.5, ex + 3, ey + 3.5], outline=(120, 130, 150, 255))
+            p.ellipse([ex - .5, ey - 1.5, ex + 2.5, ey + 2.5], fill=PUP)
+            p.ellipse([ex + .3, ey - 1, ex + 1.6, ey + .3], fill=WHITE)
 
     # Schnabel
-    by = top + 6
-    d.polygon([(9, by), (12, by + 1), (9, by + 3)], fill=ORANGE)
-    d.point([(9, by + 1)], fill=ORANGE_D)
+    by = top + 12
+    p.poly([(19, by - 1), (26, by + 2), (19, by + 5)], fill=BEAK)
+    p.poly([(19, by + 1.5), (26, by + 2), (19, by + 5)], fill=BEAK_LO)
+    p.line([(19.5, by), (24.5, by + 1.8)], width=.8, fill=BEAK_HI)
 
-    # Schal (macht Pengu unverwechselbar)
-    sy = top + 7
-    d.rectangle([4, sy, 15, sy + 1], fill=SCARF)
-    d.rectangle([13, sy + 1, 15, sy + 4], fill=SCARF_D)
+    # Schal (Markenzeichen)
+    sy = top + 15
+    p.rounded([7, sy, 33, sy + 4.5], 2, fill=SCARF)
+    p.line([(8, sy + 1), (32, sy + 1)], width=.8, fill=SCARF_HI)
+    p.poly([(29, sy + 3), (35, sy + 13), (31, sy + 14), (26.5, sy + 4)], fill=SCARF_LO)
+    p.line([(30, sy + 4), (33.5, sy + 12)], width=.8, fill=SCARF)
 
     # Füße
-    d.rectangle([5 + lfoot, bottom, 8 + lfoot, bottom + 1], fill=ORANGE)
-    d.rectangle([11 + rfoot, bottom, 14 + rfoot, bottom + 1], fill=ORANGE)
-    return img
+    for cx, off, lift in ((16, lf, llift), (24, rf, rlift)):
+        x0 = cx - 4 + off
+        y0 = bot - 2 - lift
+        p.ellipse([x0 - .6, y0 - .6, x0 + 8.6, y0 + 4.6], fill=OUT)
+        p.ellipse([x0, y0, x0 + 8, y0 + 4], fill=FOOT)
+        p.ellipse([x0 + .5, y0 + 2, x0 + 8, y0 + 4], fill=FOOT_LO)
+        p.line([(x0 + 2.7, y0 + .5), (x0 + 2.7, y0 + 3)], width=.7, fill=FOOT_LO)
+        p.line([(x0 + 5.3, y0 + .5), (x0 + 5.3, y0 + 3)], width=.7, fill=FOOT_LO)
+
+    return p.result()
 
 
-def gen_pengu() -> None:
+def gen_pengu():
     frames = [
-        draw_pengu(0, 0),                       # idle0
-        draw_pengu(0, 0, squash=0, blink=True), # idle1 (blinzeln)
-        draw_pengu(-1, 2),                      # walk0
-        draw_pengu(0, 0),                       # walk1
-        draw_pengu(2, -1),                      # walk2
-        draw_pengu(0, 0),                       # walk3
-        draw_pengu(1, 1, arms_up=True),         # jump
-        draw_pengu(-2, 2, arms_up=False),       # fall
-        draw_pengu(0, 0, squash=4),             # duck
+        draw_pengu(),                                  # idle0
+        draw_pengu(blink=True, breathe=1),             # idle1
+        draw_pengu(lf=-2, llift=3, rf=2),              # walk0
+        draw_pengu(),                                  # walk1
+        draw_pengu(lf=2, rf=-2, rlift=3),              # walk2
+        draw_pengu(breathe=1),                         # walk3
+        draw_pengu(lf=1, rf=-1, llift=3, rlift=3, arms_up=True),  # jump
+        draw_pengu(lf=-3, rf=3),                       # fall
+        draw_pengu(squash=8),                          # duck
     ]
-    sheet = Image.new("RGBA", (20 * len(frames), 24), NONE)
-    for i, f in enumerate(frames):
-        sheet.paste(f, (i * 20, 0))
-    _save(sheet, "characters", "pengu.png")
+    _save(_sheet(frames, 40, 48), "characters", "pengu.png")
 
 
 # =========================================================================
-#  Münze
+#  Münze (24x24)
 # =========================================================================
-def gen_coin() -> None:
-    GOLD = (255, 214, 64, 255)
-    GOLD_D = (214, 158, 30, 255)
-    GOLD_HI = (255, 246, 190, 255)
+def gen_coin():
+    GOLD = (255, 206, 56, 255)
+    GOLD_HI = (255, 244, 190, 255)
+    GOLD_LO = (206, 150, 28, 255)
+    RIM = (170, 116, 16, 255)
+    widths = [22, 16, 9, 3.5, 9, 16]
     frames = []
-    widths = [12, 9, 5, 2, 5, 9]   # Rotationsillusion
     for w in widths:
-        img = Image.new("RGBA", (12, 12), NONE)
-        d = ImageDraw.Draw(img)
-        cx = 6
-        x0 = cx - w / 2
-        x1 = cx + w / 2
-        d.ellipse([x0, 1, x1, 10], fill=GOLD, outline=GOLD_D)
-        if w >= 5:
-            d.ellipse([x0 + 1, 3, x1 - 1, 8], outline=GOLD_HI)
-            d.point([(cx - 1, 3)], fill=GOLD_HI)
-        frames.append(img)
-    sheet = Image.new("RGBA", (12 * len(frames), 12), NONE)
-    for i, f in enumerate(frames):
-        sheet.paste(f, (i * 12, 0))
-    _save(sheet, "collectibles", "coin.png")
+        p = Pen(24, 24)
+        cx = 12
+        x0, x1 = cx - w / 2, cx + w / 2
+        p.ellipse([x0 - 1, 1, x1 + 1, 23], fill=RIM)
+        p.ellipse([x0, 2, x1, 22], fill=GOLD_LO)
+        p.ellipse([x0 + .8, 2, x1 - .8, 20], fill=GOLD)
+        if w >= 8:
+            p.ellipse([x0 + 1.5, 4, x1 - 1.5, 13], fill=GOLD_HI)   # oberer Glanz
+            p.ellipse([x0 + 3, 6, x1 - 3, 18], outline=GOLD_LO)    # geprägter Ring
+            p.line([(cx - 1.5, 6), (cx - 1.5, 11)], width=1, fill=GOLD_HI)
+        frames.append(p.result())
+    _save(_sheet(frames, 24, 24), "collectibles", "coin.png")
 
 
 # =========================================================================
-#  Gegner „Schneeball"
+#  Gegner „Schneeball" (36x32)
 # =========================================================================
 def draw_snowball(step: int) -> Image.Image:
-    img = Image.new("RGBA", (18, 16), NONE)
-    d = ImageDraw.Draw(img)
-    SNOW = (238, 245, 255, 255)
-    SNOW_D = (190, 205, 228, 255)
-    d.ellipse([2, 2, 15, 15], fill=SNOW, outline=SNOW_D)
-    d.ellipse([4, 4, 9, 9], fill=WHITE)
+    p = Pen(36, 32)
+    SNOW = (240, 247, 255, 255)
+    SNOW_SH = (198, 214, 236, 255)
+    p.ellipse([3, 3, 33, 31], fill=OUT)
+    p.ellipse([4, 4, 32, 30], fill=SNOW)
+    p.ellipse([6, 14, 30, 29], fill=SNOW_SH)     # unterer Schatten
+    p.ellipse([5, 5, 30, 24], fill=SNOW)          # oberer Rundkörper hell
+    p.ellipse([9, 7, 18, 14], fill=WHITE)         # Glanz
     # Augen
-    d.ellipse([6, 6, 8, 9], fill=WHITE, outline=PUP)
-    d.ellipse([10, 6, 12, 9], fill=WHITE, outline=PUP)
-    d.point([(7, 8), (11, 8)], fill=PUP)
+    for ex in (14, 23):
+        p.ellipse([ex - 2.5, 12, ex + 2.5, 19], fill=WHITE, outline=(150, 165, 185, 255))
+        p.ellipse([ex - .8, 14, ex + 2, 18.5], fill=PUP)
+        p.ellipse([ex, 14.5, ex + 1, 15.8], fill=WHITE)
+    # Wangen
+    p.ellipse([8, 18, 12, 21], fill=(255, 190, 195, 150))
+    p.ellipse([25, 18, 29, 21], fill=(255, 190, 195, 150))
     # Mund
-    d.arc([7, 9, 11, 12], 0, 180, fill=PUP)
+    p.arc([15, 18, 22, 24], 10, 170, width=1.2, fill=PUP)
     # Füße
-    fo = 1 if step == 0 else -1
-    d.rectangle([4, 14, 7, 15], fill=ORANGE_D)
-    d.rectangle([10 + fo, 14, 13 + fo, 15], fill=ORANGE_D)
-    return img
+    fo = 2 if step == 0 else -2
+    for cx in (11, 25):
+        off = fo if cx == 25 else -fo
+        p.ellipse([cx - 4 + off, 28, cx + 4 + off, 32], fill=FOOT)
+        p.ellipse([cx - 4 + off, 30, cx + 4 + off, 32], fill=FOOT_LO)
+    return p.result()
 
 
 def draw_snowball_flat() -> Image.Image:
-    img = Image.new("RGBA", (18, 16), NONE)
-    d = ImageDraw.Draw(img)
-    SNOW = (238, 245, 255, 255)
-    SNOW_D = (190, 205, 228, 255)
-    d.ellipse([1, 10, 16, 15], fill=SNOW, outline=SNOW_D)
-    d.line([6, 12, 7, 12], fill=PUP)
-    d.line([10, 12, 11, 12], fill=PUP)
-    return img
+    p = Pen(36, 32)
+    SNOW = (240, 247, 255, 255)
+    SNOW_SH = (198, 214, 236, 255)
+    p.ellipse([2, 22, 34, 31], fill=OUT)
+    p.ellipse([3, 23, 33, 30], fill=SNOW)
+    p.ellipse([4, 26, 32, 30], fill=SNOW_SH)
+    p.line([(12, 26), (15, 26)], width=1.2, fill=PUP)
+    p.line([(21, 26), (24, 26)], width=1.2, fill=PUP)
+    return p.result()
 
 
-def gen_snowball() -> None:
+def gen_snowball():
     frames = [draw_snowball(0), draw_snowball(1), draw_snowball_flat()]
-    sheet = Image.new("RGBA", (18 * len(frames), 16), NONE)
-    for i, f in enumerate(frames):
-        sheet.paste(f, (i * 18, 0))
-    _save(sheet, "enemies", "snowball.png")
+    _save(_sheet(frames, 36, 32), "enemies", "snowball.png")
 
 
 # =========================================================================
-#  Kachelsatz
+#  Kachelsatz (7 x 32x32)
 # =========================================================================
-def _noise_rect(d, box, base, dark, seed=0):
+def _pebbles(p, box, colors, seed, count):
+    rnd = _lcg(seed)
     x0, y0, x1, y1 = box
-    d.rectangle(box, fill=base)
-    n = 0
-    for y in range(y0, y1):
-        for x in range(x0, x1):
-            n = (n * 1103515245 + 12345 + x * 7 + y * 13 + seed) & 0x7FFFFFFF
-            if n % 7 == 0:
-                d.point([(x, y)], fill=dark)
+    for _ in range(count):
+        px = x0 + next(rnd) * (x1 - x0)
+        py = y0 + next(rnd) * (y1 - y0)
+        r = 0.7 + next(rnd) * 1.6
+        c = colors[int(next(rnd) * len(colors)) % len(colors)]
+        p.ellipse([px - r, py - r, px + r, py + r], fill=c)
 
 
-def gen_tileset() -> None:
-    T = 16
-    tiles = 7
-    sheet = Image.new("RGBA", (T * tiles, T), NONE)
+def gen_tileset():
+    T = 32
+    tiles = []
 
-    def cell(i):
-        img = Image.new("RGBA", (T, T), NONE)
-        return img, ImageDraw.Draw(img)
-
-    # 0: leer -> transparent
-    imgs = [Image.new("RGBA", (T, T), NONE)]
+    # 0: leer
+    tiles.append(Image.new("RGBA", (T, T), NONE))
 
     # 1: Gras-Oberseite
-    img, d = cell(1)
-    _noise_rect(d, (0, 4, T, T), (134, 96, 58, 255), (110, 78, 46, 255), 1)
-    d.rectangle([0, 0, T, 4], fill=(94, 190, 78, 255))
-    d.rectangle([0, 4, T, 5], fill=(70, 158, 60, 255))
-    for x in range(0, T, 3):
-        d.line([x, 4, x, 1], fill=(120, 214, 96, 255))
-    imgs.append(img)
+    p = Pen(T, T)
+    p.rect([0, 8, T, T], fill=(138, 100, 60, 255))
+    _pebbles(p, (0, 10, T, T), [(112, 80, 48, 255), (156, 116, 72, 255)], 11, 60)
+    p.rect([0, 0, T, 9], fill=(92, 190, 78, 255))
+    p.rect([0, 8, T, 11], fill=(66, 158, 60, 255))
+    for x in range(-2, T, 6):
+        p.poly([(x, 8), (x + 2, 1), (x + 4, 8)], fill=(112, 214, 96, 255))
+    p.line([(0, 2), (T, 2)], width=1, fill=(150, 228, 120, 255))
+    tiles.append(p.result())
 
     # 2: Erde
-    img, d = cell(2)
-    _noise_rect(d, (0, 0, T, T), (134, 96, 58, 255), (110, 78, 46, 255), 2)
-    imgs.append(img)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(138, 100, 60, 255))
+    _pebbles(p, (0, 0, T, T), [(112, 80, 48, 255), (160, 120, 76, 255), (98, 70, 42, 255)], 7, 90)
+    p.line([(0, 1), (T, 1)], width=1, fill=(160, 120, 76, 255))
+    tiles.append(p.result())
 
     # 3: Ziegel
-    img, d = cell(3)
-    d.rectangle([0, 0, T, T], fill=(178, 92, 66, 255))
-    d.line([0, 8, T, 8], fill=(120, 60, 44, 255))
-    d.line([8, 0, 8, 8], fill=(120, 60, 44, 255))
-    d.line([4, 8, 4, T], fill=(120, 60, 44, 255))
-    d.line([12, 8, 12, T], fill=(120, 60, 44, 255))
-    imgs.append(img)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(120, 60, 44, 255))   # Fuge
+    def brick(x0, y0, x1, y1):
+        p.rounded([x0, y0, x1, y1], 1.5, fill=(182, 96, 68, 255))
+        p.line([(x0 + 1, y0 + 1), (x1 - 1, y0 + 1)], width=1, fill=(214, 132, 100, 255))
+        p.line([(x0 + 1, y1 - 1), (x1 - 1, y1 - 1)], width=1, fill=(150, 74, 52, 255))
+    brick(1, 1, 15, 14); brick(17, 1, 31, 14)
+    brick(-7, 17, 7, 30); brick(9, 17, 23, 30); brick(25, 17, 39, 30)
+    tiles.append(p.result())
 
-    # 4: Hartblock (metallisch)
-    img, d = cell(4)
-    d.rectangle([0, 0, T, T], fill=(150, 156, 170, 255))
-    d.rectangle([1, 1, T - 2, T - 2], outline=(196, 202, 214, 255))
-    for c in ((2, 2), (12, 2), (2, 12), (12, 12)):
-        d.ellipse([c[0], c[1], c[0] + 2, c[1] + 2], fill=(96, 102, 116, 255))
-    imgs.append(img)
+    # 4: Hartblock (Metall)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(150, 158, 174, 255))
+    p.poly([(0, 0), (T, 0), (T - 4, 4), (4, 4), (4, T - 4), (0, T)], fill=(196, 204, 218, 255))
+    p.poly([(T, T), (0, T), (4, T - 4), (T - 4, T - 4), (T - 4, 4), (T, 0)], fill=(104, 112, 130, 255))
+    p.rect([5, 5, T - 5, T - 5], fill=(168, 176, 192, 255))
+    for cx, cy in ((8, 8), (24, 8), (8, 24), (24, 24)):
+        p.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(92, 100, 118, 255))
+        p.ellipse([cx - 1.4, cy - 1.4, cx + 1, cy + 1], fill=(198, 206, 220, 255))
+    tiles.append(p.result())
 
     # 5: Stein
-    img, d = cell(5)
-    _noise_rect(d, (0, 0, T, T), (120, 124, 134, 255), (96, 100, 110, 255), 5)
-    d.line([0, 0, T, 0], fill=(150, 154, 164, 255))
-    imgs.append(img)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(122, 126, 138, 255))
+    _pebbles(p, (0, 0, T, T), [(102, 106, 118, 255), (142, 146, 158, 255)], 5, 80)
+    p.line([(0, 1), (T, 1)], width=1, fill=(158, 162, 174, 255))
+    p.line([(10, 6), (16, 16), (12, 26)], width=1, fill=(96, 100, 112, 255))  # Riss
+    tiles.append(p.result())
 
     # 6: Eis
-    img, d = cell(6)
-    d.rectangle([0, 0, T, T], fill=(176, 224, 246, 255))
-    d.line([2, 2, 6, 6], fill=WHITE)
-    d.line([9, 4, 12, 7], fill=(230, 246, 255, 255))
-    imgs.append(img)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(178, 226, 246, 255))
+    p.poly([(0, 0), (T, 0), (T, 10), (0, 18)], fill=(206, 240, 252, 255))
+    p.line([(4, 5), (11, 12)], width=1.4, fill=WHITE)
+    p.line([(20, 8), (26, 15)], width=1, fill=(232, 248, 255, 255))
+    p.line([(8, 22), (14, 28)], width=1, fill=(150, 206, 232, 255))
+    tiles.append(p.result())
 
-    for i, im in enumerate(imgs):
-        sheet.paste(im, (i * T, 0))
-    _save(sheet, "tiles", "tileset.png")
+    _save(_sheet(tiles, T, T), "tiles", "tileset.png")
 
 
 # =========================================================================
 #  Dekor-Props
 # =========================================================================
-def gen_props() -> None:
-    # Busch
-    img = Image.new("RGBA", (24, 16), NONE)
-    d = ImageDraw.Draw(img)
-    for cx, cy, r in [(7, 10, 6), (13, 8, 7), (18, 11, 5)]:
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(70, 168, 74, 255))
-    d.ellipse([9, 4, 17, 12], fill=(96, 196, 96, 255))
-    _save(img, "props", "bush.png")
+def gen_props():
+    G = (74, 172, 78, 255); GHI = (108, 206, 104, 255); GLO = (52, 138, 62, 255)
 
-    # Wolke
-    img = Image.new("RGBA", (48, 24), NONE)
-    d = ImageDraw.Draw(img)
-    for cx, cy, r in [(14, 16, 8), (24, 12, 11), (34, 16, 8), (22, 18, 10)]:
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 255, 255, 235))
-    _save(img, "props", "cloud.png")
+    # Busch (48x32)
+    p = Pen(48, 32)
+    for cx, cy, r in [(13, 22, 11), (25, 16, 13), (36, 22, 10)]:
+        p.ellipse([cx - r - 1, cy - r - 1, cx + r + 1, cy + r + 1], fill=OUT)
+    for cx, cy, r in [(13, 22, 11), (25, 16, 13), (36, 22, 10)]:
+        p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=G)
+    p.ellipse([18, 8, 33, 20], fill=GHI)
+    p.ellipse([10, 26, 40, 34], fill=GLO)
+    _save(p.result(), "props", "bush.png")
 
-    # Baum
-    img = Image.new("RGBA", (32, 48), NONE)
-    d = ImageDraw.Draw(img)
-    d.rectangle([14, 30, 19, 48], fill=(120, 82, 50, 255))
-    d.ellipse([2, 2, 30, 34], fill=(60, 158, 68, 255))
-    d.ellipse([6, 0, 26, 22], fill=(84, 186, 88, 255))
-    _save(img, "props", "tree.png")
+    # Wolke (96x48)
+    p = Pen(96, 48)
+    for cx, cy, r in [(26, 32, 16), (46, 22, 22), (68, 30, 17), (44, 36, 20)]:
+        p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 255, 255, 245))
+    for cx, cy, r in [(30, 34, 12), (48, 26, 16)]:
+        p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=WHITE)
+    p.ellipse([20, 38, 78, 48], fill=(224, 232, 244, 220))
+    _save(p.result(), "props", "cloud.png")
 
-    # Zielfahne
-    img = Image.new("RGBA", (16, 48), NONE)
-    d = ImageDraw.Draw(img)
-    d.rectangle([3, 0, 4, 46], fill=(210, 214, 224, 255))
-    d.polygon([(5, 2), (15, 6), (5, 11)], fill=(230, 70, 80, 255))
-    d.ellipse([1, 44, 12, 48], fill=(120, 90, 60, 255))
-    _save(img, "props", "flag.png")
+    # Baum (64x96)
+    p = Pen(64, 96)
+    p.rounded([27, 54, 37, 96], 3, fill=(120, 82, 50, 255))
+    p.line([(30, 58), (30, 92)], width=1.4, fill=(96, 62, 36, 255))
+    p.line([(34, 58), (34, 92)], width=1, fill=(146, 104, 66, 255))
+    for cx, cy, r in [(20, 34, 18), (44, 34, 18), (32, 20, 20), (32, 44, 20)]:
+        p.ellipse([cx - r - 1, cy - r - 1, cx + r + 1, cy + r + 1], fill=OUT)
+    for cx, cy, r in [(20, 34, 18), (44, 34, 18), (32, 20, 20), (32, 44, 20)]:
+        p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=G)
+    p.ellipse([22, 8, 42, 26], fill=GHI)
+    p.ellipse([14, 44, 50, 62], fill=GLO)
+    _save(p.result(), "props", "tree.png")
+
+    # Zielfahne (32x96)
+    p = Pen(32, 96)
+    p.rounded([5, 2, 9, 92], 2, fill=(206, 210, 220, 255))
+    p.line([(6, 4), (6, 90)], width=1, fill=WHITE)
+    p.line([(8.5, 4), (8.5, 90)], width=1, fill=(150, 154, 164, 255))
+    p.poly([(9, 4), (30, 12), (9, 22)], fill=(232, 70, 80, 255))
+    p.poly([(9, 13), (30, 12), (9, 22)], fill=(196, 48, 60, 255))
+    p.line([(9, 5), (27, 11.5)], width=1, fill=(250, 140, 140, 255))
+    p.ellipse([2, 88, 22, 96], fill=(120, 90, 60, 255))
+    _save(p.result(), "props", "flag.png")
 
 
-def main() -> None:
-    print("Erzeuge Pixel-Art ->", IMG)
+def main():
+    print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_tileset()
     gen_pengu()
     gen_coin()

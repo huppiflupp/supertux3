@@ -37,7 +37,7 @@ prozedural bzw. per lokaler FLUX-Pipeline erzeugt — siehe
 
 ## Technik
 
-- Python 3.14 + pygame-ce, interne Auflösung 480×270 (Pixel-Look).
+- Python 3.14 + pygame-ce, interne Auflösung 960×540, 32-px-Kacheln (SuperTux2-Stil).
 - Feste-Zeitschritt-Physik, achsenweise AABB-Kachelkollision.
 - Grafik: prozedurale Pixel-Art (PIL) + FLUX-Kulissen (ComfyUI/RTX 5080).
 - Audio: prozedurale Chiptune-Synthese (numpy).

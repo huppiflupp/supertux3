@@ -10,8 +10,8 @@ from ..settings import VIRTUAL_W, VIRTUAL_H, IMAGE_DIR, WHITE, UI_SHADOW, GAME_T
 
 class MenuScene(Scene):
     def on_enter(self) -> None:
-        self.title_font = pygame.font.Font(None, 72)
-        self.font = pygame.font.Font(None, 24)
+        self.title_font = pygame.font.Font(None, 130)
+        self.font = pygame.font.Font(None, 42)
         self.t = 0.0
         art = IMAGE_DIR / "background" / "title_art.png"
         self.art = None
@@ -46,17 +46,16 @@ class MenuScene(Scene):
         else:
             surface.fill((92, 148, 252))
 
-        self._center(surface, GAME_TITLE, self.title_font, (255, 240, 120), 78)
-        import math
+        self._center(surface, GAME_TITLE, self.title_font, (255, 240, 120), int(VIRTUAL_H * 0.30))
         if int(self.t * 2) % 2 == 0:
-            self._center(surface, "ENTER = Spielen", self.font, WHITE, VIRTUAL_H - 70)
+            self._center(surface, "ENTER = Spielen", self.font, WHITE, VIRTUAL_H - 130)
         self._center(surface, "Pfeile/WASD  bewegen   ·   Leertaste springen",
-                     self.font, (220, 230, 245), VIRTUAL_H - 44)
+                     self.font, (220, 230, 245), VIRTUAL_H - 84)
         self._center(surface, "M = Ton   ·   ESC = Beenden",
-                     self.font, (200, 210, 230), VIRTUAL_H - 24)
+                     self.font, (200, 210, 230), VIRTUAL_H - 48)
 
     def _center(self, surface, text, font, color, y) -> None:
         img = font.render(text, True, color)
         rect = img.get_rect(center=(VIRTUAL_W // 2, y))
-        surface.blit(font.render(text, True, UI_SHADOW), rect.move(2, 2))
+        surface.blit(font.render(text, True, UI_SHADOW), rect.move(3, 3))
         surface.blit(img, rect)

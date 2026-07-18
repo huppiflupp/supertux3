@@ -53,6 +53,7 @@ Parallax, Zielobjekt), nicht den Code.
 
 ## Technische Leitplanken
 - Physik in Pixel/s, **fester Zeitschritt** 1/60 s.
-- Interne Auflösung 480×270, `pygame.SCALED` fürs Hochskalieren.
+- Interne Auflösung 960×540 (Kachel 32px), seitenverhältnistreu aufs Fenster skaliert.
+- HD-Grafik supersampled (4×) gezeichnet und geglättet — SuperTux2-orientiert.
 - Konstanten zentral in `settings.py`.
 - Fehlertolerant: fehlende Assets/kein Audiogerät dürfen nicht crashen.

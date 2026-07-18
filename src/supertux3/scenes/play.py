@@ -29,8 +29,8 @@ class PlayScene(Scene):
         self.level = Level.load(self.game, self.level_name)
         self.camera = Camera(self.level.width_px, self.level.height_px)
         self.camera.update(self.level.player.rect, 0.0, snap=True)
-        self.font = pygame.font.Font(None, 20)
-        self.big_font = pygame.font.Font(None, 44)
+        self.font = pygame.font.Font(None, 34)
+        self.big_font = pygame.font.Font(None, 76)
         self.mode = "play"           # play | dead | complete
         self.timer = 0.0
         self._build_background()
@@ -74,7 +74,7 @@ class PlayScene(Scene):
             self.camera.update(lvl.player.rect, dt)
         elif self.mode == "dead":
             self.timer -= dt
-            lvl.player.vy += 700 * dt
+            lvl.player.vy += 1400 * dt
             lvl.player.y += lvl.player.vy * dt
             if self.timer <= 0:
                 self._after_death()
@@ -104,14 +104,14 @@ class PlayScene(Scene):
         for e in self.level.enemies:
             if e.squashed or not prect.colliderect(e.rect):
                 continue
-            if p.vy > 0 and (prect.bottom - e.rect.top) <= 12:
+            if p.vy > 0 and (prect.bottom - e.rect.top) <= 24:
                 e.stomp()
                 p.bounce()
                 self.game.audio.play("stomp")
             elif p.hurt():
                 self.game.audio.play("hurt")
-                p.vx = -6 * p.facing * 20
-                p.vy = -160
+                p.vx = -240 * p.facing
+                p.vy = -320
                 self.game.lives -= 1
                 if self.game.lives <= 0:
                     self._die()
@@ -124,7 +124,7 @@ class PlayScene(Scene):
     def _die(self) -> None:
         self.mode = "dead"
         self.timer = 1.2
-        self.level.player.vy = -260
+        self.level.player.vy = -520
         self.game.audio.play("hurt")
 
     def _after_death(self) -> None:

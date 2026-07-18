@@ -19,28 +19,31 @@ LEVEL_DIR = PROJECT_ROOT / "levels"
 
 # --- Fenster / Rendering -------------------------------------------------
 GAME_TITLE = "SuperTux3"
-# Interne Renderauflösung (wird auf die Fenstergröße hochskaliert -> Pixel-Look)
-VIRTUAL_W = 480
-VIRTUAL_H = 270
-WINDOW_SCALE = 3               # Startfenster = VIRTUAL * SCALE
+# Interne Renderauflösung. Das Sichtfeld bleibt 30x16.9 Kacheln (wie zuvor bei
+# 480x270 / 16px), nur alles in doppelter Auflösung mit detaillierterer Grafik.
+VIRTUAL_W = 960
+VIRTUAL_H = 540
+WINDOW_SCALE = 2               # bevorzugter Start-Skalierungsfaktor
 FPS = 60
 FIXED_DT = 1.0 / 60.0          # fester Physik-Zeitschritt
 
 # --- Welt ----------------------------------------------------------------
-TILE = 16                      # Kachelgröße in Pixeln (interne Auflösung)
+TILE = 32                      # Kachelgröße in Pixeln (wie SuperTux2)
 
 # --- Physik (px pro Sekunde) --------------------------------------------
-GRAVITY = 1100.0
-MAX_FALL_SPEED = 560.0
-MOVE_ACCEL = 900.0
-AIR_ACCEL = 650.0
-MAX_RUN_SPEED = 130.0
-GROUND_FRICTION = 1000.0
-JUMP_SPEED = 360.0             # Anfangsgeschwindigkeit nach oben
-JUMP_CUTOFF = 0.45            # Faktor, wenn Sprungtaste früh losgelassen wird
-COYOTE_TIME = 0.08            # noch springen dürfen kurz nach Kantenabgang
-JUMP_BUFFER = 0.10           # Sprungeingabe kurz vorm Landen puffern
-STOMP_BOUNCE = 260.0          # Absprung nach Gegner-Stampfen
+# Werte skalieren mit TILE (32/16 = 2x), damit Sprunghöhe/Tempo IN KACHELN und
+# damit das Spielgefühl identisch zum 16px-Prototyp bleiben.
+GRAVITY = 2200.0
+MAX_FALL_SPEED = 1120.0
+MOVE_ACCEL = 1800.0
+AIR_ACCEL = 1300.0
+MAX_RUN_SPEED = 260.0
+GROUND_FRICTION = 2000.0
+JUMP_SPEED = 720.0            # Anfangsgeschwindigkeit nach oben
+JUMP_CUTOFF = 0.45           # Faktor, wenn Sprungtaste früh losgelassen wird
+COYOTE_TIME = 0.08           # noch springen dürfen kurz nach Kantenabgang (zeitbasiert)
+JUMP_BUFFER = 0.10           # Sprungeingabe kurz vorm Landen puffern (zeitbasiert)
+STOMP_BOUNCE = 520.0         # Absprung nach Gegner-Stampfen
 
 # --- Farben (Fallback / UI) ---------------------------------------------
 SKY_TOP = (92, 148, 252)

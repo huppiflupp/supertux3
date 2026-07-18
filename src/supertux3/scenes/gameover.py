@@ -15,8 +15,8 @@ class ResultScene(Scene):
         self.total = total
 
     def on_enter(self) -> None:
-        self.big = pygame.font.Font(None, 56)
-        self.font = pygame.font.Font(None, 24)
+        self.big = pygame.font.Font(None, 100)
+        self.font = pygame.font.Font(None, 42)
         if self.won:
             self.game.audio.play_music("title.ogg")
         else:
@@ -38,14 +38,14 @@ class ResultScene(Scene):
         color = (255, 240, 120) if self.won else (255, 120, 120)
         self._center(surface, title, self.big, color, VIRTUAL_H // 2 - 40)
         self._center(surface, f"Münzen: {self.coins} / {self.total}",
-                     self.font, WHITE, VIRTUAL_H // 2 + 10)
+                     self.font, WHITE, VIRTUAL_H // 2 + 30)
         self._center(surface, "ENTER = Nochmal   ·   ESC = Menü",
-                     self.font, (210, 220, 240), VIRTUAL_H // 2 + 44)
+                     self.font, (210, 220, 240), VIRTUAL_H // 2 + 78)
 
     def _center(self, surface, text, font, color, y) -> None:
         img = font.render(text, True, color)
         rect = img.get_rect(center=(VIRTUAL_W // 2, y))
-        surface.blit(font.render(text, True, UI_SHADOW), rect.move(2, 2))
+        surface.blit(font.render(text, True, UI_SHADOW), rect.move(3, 3))
         surface.blit(img, rect)
 
 
