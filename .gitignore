@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.directory
+/tools/comfyui/ComfyUI/models/
+/tools/comfyui/ComfyUI/output/
+*.log

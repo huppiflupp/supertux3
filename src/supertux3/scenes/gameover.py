@@ -1,0 +1,53 @@
+"""Ergebnis-Szene: gewonnen oder verloren."""
+from __future__ import annotations
+
+import pygame
+
+from ..engine.scene import Scene
+from ..settings import VIRTUAL_W, VIRTUAL_H, WHITE, UI_SHADOW, START_LIVES
+
+
+class ResultScene(Scene):
+    def __init__(self, game, won: bool, coins: int, total: int):
+        super().__init__(game)
+        self.won = won
+        self.coins = coins
+        self.total = total
+
+    def on_enter(self) -> None:
+        self.big = pygame.font.Font(None, 56)
+        self.font = pygame.font.Font(None, 24)
+        if self.won:
+            self.game.audio.play_music("title.ogg")
+        else:
+            self.game.audio.stop_music()
+
+    def handle_event(self, event: pygame.event.Event) -> None:
+        if event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                from .play import PlayScene
+                self.game.lives = START_LIVES
+                self.game.scenes.switch(PlayScene(self.game))
+            elif event.key == pygame.K_ESCAPE:
+                from .menu import MenuScene
+                self.game.scenes.switch(MenuScene(self.game))
+
+    def draw(self, surface: pygame.Surface) -> None:
+        surface.fill((24, 34, 58) if not self.won else (32, 64, 40))
+        title = "Level geschafft!" if self.won else "Game Over"
+        color = (255, 240, 120) if self.won else (255, 120, 120)
+        self._center(surface, title, self.big, color, VIRTUAL_H // 2 - 40)
+        self._center(surface, f"Münzen: {self.coins} / {self.total}",
+                     self.font, WHITE, VIRTUAL_H // 2 + 10)
+        self._center(surface, "ENTER = Nochmal   ·   ESC = Menü",
+                     self.font, (210, 220, 240), VIRTUAL_H // 2 + 44)
+
+    def _center(self, surface, text, font, color, y) -> None:
+        img = font.render(text, True, color)
+        rect = img.get_rect(center=(VIRTUAL_W // 2, y))
+        surface.blit(font.render(text, True, UI_SHADOW), rect.move(2, 2))
+        surface.blit(img, rect)
+
+
+# Rückwärtskompatibler Alias
+GameOverScene = ResultScene
