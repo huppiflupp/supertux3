@@ -59,7 +59,31 @@ class B:
     def prop(self, name, x, y=FLOOR):
         self.props.append([name, x, y])
 
+    def surface_row(self, x):
+        for y in range(H):
+            if self.g[y][x] in "GDBSI#":
+                return y
+        return None
+
+    def sprinkle_stars(self, n=3):
+        for i in range(n):
+            x0 = int(self.w * (i + 1) / (n + 1))
+            for dx in range(0, 10):
+                placed = False
+                for xx in (x0 + dx, x0 - dx):
+                    if 0 <= xx < self.w:
+                        sy = self.surface_row(xx)
+                        if sy is not None and sy >= 4:
+                            self.e("star", xx, sy - 3)
+                            placed = True
+                            break
+                if placed:
+                    break
+
     def dump(self, path, name, theme, spawn=(2, FLOOR), bg=None, music=None):
+        if not any(e[0] == "star" for e in self.ent) and \
+                not any(e[0] == "boss" for e in self.ent):
+            self.sprinkle_stars()
         data = {"name": name, "theme": theme, "spawn": list(spawn),
                 "solid": ["".join(r) for r in self.g],
                 "props": self.props, "entities": self.ent}
@@ -318,13 +342,124 @@ def level10():
     b.arc(15, 9); b.arc(31, 9); b.coins(21, 25, 8)
     b.e("growth", 6, FLOOR)
     b.e("boss", 23, FLOOR)
-    b.dump(LV / "level10.json", "Frostkönigs Festung", "cave")
+    b.dump(LV / "level10.json", "Frostkönigs Festung", "cave", music="boss.ogg")
+
+
+# --- Welt 2 -------------------------------------------------------------
+def level11():
+    b = B(180)
+    pits = [(26, 31), (52, 58), (84, 90), (116, 122), (148, 154)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1); x = c + 1
+    b.ground(x, 179)
+    for x0, x1, y in [(20, 26, 10), (66, 72, 8), (100, 106, 10), (140, 146, 8)]:
+        b.plat(x0, x1, y)
+    b.e("mplat", 52, 11, 58, 8, 3); b.e("mplat", 116, 12, 122, 12, 3)
+    b.e("spring", 24, FLOOR); b.e("spring", 82, FLOOR); b.e("spring", 146, FLOOR)
+    for cx in (28, 55, 87, 119, 151):
+        b.arc(cx, 8)
+    b.coins(66, 72, 7); b.coins(100, 106, 9); b.coins(140, 146, 7)
+    b.e("growth", 68, 6)
+    for ex in (16, 44, 78, 110, 164):
+        b.e("snowball", ex, FLOOR)
+    for ex in (38, 96, 130):
+        b.e("spiky", ex, FLOOR)
+    b.e("flyer", 60, 6, 6); b.e("flyer", 128, 5, 7)
+    b.e("checkpoint", 92, FLOOR); b.e("goal", 176, FLOOR)
+    b.dump(LV / "level11.json", "Kraterfelder", "sunset")
+
+
+def level12():
+    b = B(185)
+    pits = [(24, 29), (50, 56), (80, 86), (112, 118), (144, 150), (166, 171)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="I", fill="I"); x = c + 1
+    b.ground(x, 184, ch="I", fill="I")
+    for x0, x1, y in [(18, 24, 10), (62, 68, 9), (96, 102, 11), (130, 136, 9)]:
+        b.plat(x0, x1, y, "I")
+    b.e("mplat", 50, 12, 56, 8, 3); b.e("mplat", 112, 11, 118, 11, 3)
+    b.e("spring", 22, FLOOR); b.e("spring", 78, FLOOR); b.e("spring", 142, FLOOR)
+    for cx in (26, 53, 83, 115, 147):
+        b.arc(cx, 8)
+    b.e("growth", 64, 7)
+    for ex in (16, 44, 90, 150, 180):
+        b.e("spiky", ex, FLOOR)
+    for ex in (60, 120):
+        b.e("snowball", ex, FLOOR)
+    b.e("flyer", 70, 6, 6); b.e("flyer", 134, 5, 7)
+    b.e("checkpoint", 88, FLOOR); b.e("goal", 181, FLOOR)
+    b.dump(LV / "level12.json", "Frostpalast", "ice")
+
+
+def level13():
+    b = B(185)
+    b.ground(0, 14)
+    b.ground(22, 34); b.ground(46, 60); b.ground(80, 96)
+    b.ground(118, 134); b.ground(166, 184)
+    b.e("mplat", 15, 12, 21, 12, 3)
+    b.e("mplat", 35, 12, 45, 9, 3)
+    b.e("mplat", 61, 11, 79, 11, 3)
+    b.e("mplat", 97, 10, 117, 13, 3)
+    b.e("mplat", 135, 12, 165, 12, 4)
+    for cx in (18, 40, 70, 108, 150):
+        b.arc(cx, 8)
+    b.coins(24, 32, 12); b.coins(82, 94, 12)
+    b.e("growth", 50, 12)
+    for ex in (26, 52, 88, 124, 174):
+        b.e("snowball", ex, FLOOR)
+    for ex in (30, 90, 128):
+        b.e("spiky", ex, FLOOR)
+    b.e("flyer", 40, 6, 6); b.e("flyer", 100, 5, 8); b.e("flyer", 150, 7, 6)
+    b.e("spring", 12, FLOOR); b.e("spring", 176, FLOOR)
+    b.e("checkpoint", 88, FLOOR); b.e("goal", 181, FLOOR)
+    for t, y in [(10, 1), (60, 2), (120, 1)]:
+        b.prop("cloud", t, y)
+    b.dump(LV / "level13.json", "Sternenschlucht", "night")
+
+
+def level14():
+    b = B(195)
+    pits = [(22, 27), (42, 48), (66, 72), (92, 98), (120, 126), (150, 156), (176, 181)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="S", fill="S"); x = c + 1
+    b.ground(x, 194, ch="S", fill="S")
+    for x0, x1, y in [(32, 38, 10), (78, 84, 9), (104, 110, 11), (134, 140, 9)]:
+        b.plat(x0, x1, y, "S")
+    b.e("mplat", 42, 12, 48, 9, 3); b.e("mplat", 92, 11, 98, 11, 3)
+    b.e("mplat", 150, 10, 156, 13, 3)
+    b.e("spring", 20, FLOOR); b.e("spring", 90, FLOOR); b.e("spring", 148, FLOOR)
+    for cx in (24, 44, 68, 94, 122, 152):
+        b.arc(cx, 8)
+    b.e("growth", 34, 8); b.e("growth", 136, 7)
+    for ex in (16, 56, 100, 160, 188):
+        b.e("snowball", ex, FLOOR)
+    for ex in (36, 80, 108, 138, 178):
+        b.e("spiky", ex, FLOOR)
+    b.e("flyer", 50, 6, 6); b.e("flyer", 110, 5, 7); b.e("flyer", 164, 6, 6)
+    b.e("checkpoint", 74, FLOOR); b.e("checkpoint", 132, FLOOR)
+    b.e("goal", 191, FLOOR)
+    b.dump(LV / "level14.json", "Abgrundtiefe", "cave")
+
+
+def level15():
+    b = B(48)
+    b.ground(0, 47, ch="S", fill="S")
+    b.wall(1, 3, GROUND - 1); b.wall(2, 3, GROUND - 1)
+    b.wall(46, 3, GROUND - 1); b.wall(45, 3, GROUND - 1)
+    b.plat(9, 13, 11, "S"); b.plat(35, 39, 11, "S")
+    b.arc(16, 9); b.arc(32, 9); b.coins(22, 26, 8)
+    b.e("growth", 6, FLOOR)
+    b.e("boss", 24, FLOOR, "shadow")
+    b.dump(LV / "level15.json", "Schattenkönigs Thron", "cave", music="boss.ogg")
 
 
 def main():
     print("Baue Level ->", LV)
-    for fn in (level1, level2, level3, level4, level5, level6,
-               level7, level8, level9, level10):
+    for fn in (level1, level2, level3, level4, level5, level6, level7, level8,
+               level9, level10, level11, level12, level13, level14, level15):
         fn()
     print("Fertig.")
 

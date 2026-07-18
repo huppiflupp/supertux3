@@ -26,7 +26,7 @@ from .tilemap import Tilemap
 from ..settings import TILE, LEVEL_DIR
 from ..entities.player import Player, FORM
 from ..entities.enemy import Snowball, Spiky, Flyer
-from ..entities.collectible import Coin, GrowItem, Goal
+from ..entities.collectible import Coin, GrowItem, Goal, Star
 from ..entities.platform import MovingPlatform, Spring, Checkpoint
 from ..entities.boss import Boss
 
@@ -34,9 +34,9 @@ from ..entities.boss import Boss
 THEMES = {
     "grass":  ("sky_parallax.png", "level1.ogg"),
     "sunset": ("sunset_hills.png", "level2.ogg"),
-    "night":  ("night_hills.png", "level2.ogg"),
+    "night":  ("night_hills.png", "level3.ogg"),
     "ice":    ("ice_mountains.png", "ice.ogg"),
-    "cave":   ("cave.png", "ice.ogg"),
+    "cave":   ("cave.png", "cave.ogg"),
 }
 
 
@@ -56,6 +56,8 @@ class Level:
 
         self.coins: list[Coin] = []
         self.items: list[GrowItem] = []
+        self.stars: list[Star] = []
+        self.stars_collected = 0
         self.enemies: list = []
         self.springs: list[Spring] = []
         self.checkpoints: list[Checkpoint] = []
@@ -74,6 +76,10 @@ class Level:
                 iw = A.item_grow.get_width()
                 self.items.append(GrowItem(e[1] * TILE + (TILE - iw) // 2,
                                            e[2] * TILE + (TILE - iw) // 2, A))
+            elif k == "star":
+                sw = A.star.get_width()
+                self.stars.append(Star(e[1] * TILE + (TILE - sw) // 2,
+                                       e[2] * TILE + (TILE - sw) // 2, A))
             elif k == "snowball":
                 s = Snowball(e[1] * TILE, 0, A); s.y = (e[2] + 1) * TILE - s.h
                 self.enemies.append(s)
@@ -94,7 +100,8 @@ class Level:
                 self.platforms.append(MovingPlatform(e[1] * TILE, e[2] * TILE,
                                                      x2 * TILE, y2 * TILE, wt))
             elif k == "boss":
-                self.boss = Boss(e[1] * TILE, (e[2] + 1) * TILE, A)
+                variant = e[3] if len(e) > 3 else "frost"
+                self.boss = Boss(e[1] * TILE, (e[2] + 1) * TILE, A, variant)
                 self.enemies.append(self.boss)
             elif k == "goal":
                 self.goal = Goal(e[1] * TILE, (e[2] + 1) * TILE, A)
@@ -106,6 +113,7 @@ class Level:
                 self.props.append((img, p[1] * TILE, (p[2] + 1) * TILE - img.get_height()))
 
         self.total_coins = len(self.coins)
+        self.total_stars = len(self.stars)
 
     def platform_rects(self):
         return [p.rect for p in self.platforms]

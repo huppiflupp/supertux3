@@ -49,11 +49,21 @@ Parallax, Zielobjekt), nicht den Code.
 - [x] Gamepad-Unterstützung (`engine/controls.py`: Stick/D-Pad/Buttons, Menüs)
 - [x] Boss am Weltende: „Frostkönig" (3 Treffer, Eis-Projektile, Boss-Level 10)
 
-### M4 — Ideen (offen)
-- [ ] Level-Editor im Spiel; mehr Boss-Typen; Zwischengegner-Vielfalt
-- [ ] Zeit-/Score-Bestenlisten, Sammel-Sterne pro Level
-- [ ] Story/Intro-Sequenz, Übergänge zwischen Welten
-- [ ] Online-/Steam-Deck-Feinschliff
+### M4 — Ausbau ✅
+- [x] **In-Game-Level-Editor** (`scenes/editor.py`): Kacheln/Entities/Props
+      setzen/löschen, Theme/Startpunkt, Speichern (F5) + Testspielen (P)
+- [x] **Zweiter Boss** „Schattenkönig" (Variante, 4 HP, schneller) + 5 neue
+      Level → **15 Level** gesamt über 5 Themes
+- [x] **Sammel-Sterne** (3/Level) + **Bestzeiten**; Anzeige in Level-Auswahl
+- [x] **Bessere 8-bit-Musik**: Synth-Rewrite (Vibrato, Arpeggien, Drums, ADSR),
+      7 eigenständige Tracks inkl. treibendem Boss-Theme
+- [x] **Intro-Sequenz** vor dem Menü (animiert, überspringbar)
+
+### M5 — Ideen (offen)
+- [ ] Maus-Unterstützung im Editor; mehr Kachel-/Deko-Vielfalt, Schrägen
+- [ ] Welt-Karte statt Liste; Story-Cutscenes zwischen Welten
+- [ ] Mehr Gegner-/Boss-Typen; Zeitangriff-Modus, Online-Bestenliste
+- [ ] Steam-Deck-/Controller-Feinschliff, Optionsmenü (Tastenbelegung)
 
 ## Asset-Strategie
 - **Spielfertige Sprites** (Held, Gegner, Kacheln, Münzen): prozedural (PIL),

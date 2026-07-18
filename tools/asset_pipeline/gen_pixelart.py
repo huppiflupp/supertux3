@@ -583,6 +583,25 @@ def gen_iceball():
     _save(p.result(), "enemies", "iceball.png")
 
 
+def gen_star():
+    import math as _m
+    p = Pen(24, 24)
+    cx, cy, R, r = 12, 12.5, 11, 4.6
+    pts = []
+    for i in range(10):
+        ang = -_m.pi / 2 + i * _m.pi / 5
+        rad = R if i % 2 == 0 else r
+        pts.append((cx + rad * _m.cos(ang), cy + rad * _m.sin(ang)))
+    # Kontur + Füllung
+    op = [(cx + (x - cx) * 1.12, cy + (y - cy) * 1.12) for x, y in pts]
+    p.poly(op, fill=OUT)
+    p.poly(pts, fill=(255, 214, 70, 255))
+    inner = [(cx + (x - cx) * 0.55, cy + (y - cy) * 0.55) for x, y in pts]
+    p.poly(inner, fill=(255, 244, 180, 255))
+    p.ellipse([8, 6, 12, 10], fill=WHITE)
+    _save(p.result(), "collectibles", "star.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_tileset()
@@ -597,6 +616,7 @@ def main():
     gen_spring()
     gen_checkpoint()
     gen_grow()
+    gen_star()
     gen_props()
     print("Fertig.")
 

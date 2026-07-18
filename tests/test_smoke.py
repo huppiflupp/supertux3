@@ -94,10 +94,44 @@ def test_save_roundtrip():
     assert again["best_coins"]["2"] == 17
 
 
+def test_editor_roundtrip():
+    from supertux3.game import Game
+    from supertux3.scenes.editor import EditorScene
+    from supertux3.world.level import Level
+    from supertux3.settings import LEVEL_DIR
+    g = Game()
+    ed = EditorScene(g, "editor_test.json")
+    ed.on_enter()
+    ed.cursor = [10, 13]
+    ed._place()                       # Kachel setzen
+    ed.mode, ed.sel = 1, 1            # entity/star
+    ed.cursor = [12, 12]
+    ed._place()
+    ed._save()
+    lv = Level.load(g, "editor_test.json")
+    assert lv.total_stars == 1
+    (LEVEL_DIR / "editor_test.json").unlink(missing_ok=True)
+    pygame.quit()
+
+
+def test_second_boss():
+    from supertux3.game import Game
+    from supertux3.scenes.play import PlayScene
+    g = Game()
+    ps = PlayScene(g, level_name="level15.json")
+    ps.on_enter()
+    assert ps.level.boss is not None
+    assert ps.level.boss.variant == "shadow"
+    assert ps.level.boss.hp == 4
+    pygame.quit()
+
+
 if __name__ == "__main__":
     test_assets_and_menu()
     test_level_and_physics()
     test_all_levels_load()
     test_tmx_roundtrip()
     test_save_roundtrip()
+    test_editor_roundtrip()
+    test_second_boss()
     print("Smoke-Tests OK")

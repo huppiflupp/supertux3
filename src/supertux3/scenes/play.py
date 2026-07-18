@@ -23,13 +23,15 @@ def _sky_gradient(w, h):
 
 
 class PlayScene(Scene):
-    def __init__(self, game, index: int = 0):
+    def __init__(self, game, index: int = 0, level_name: str | None = None):
         super().__init__(game)
+        self.custom = level_name is not None
         self.index = index
-        self.level_name = LEVEL_FILES[index]
+        self.level_name = level_name if self.custom else LEVEL_FILES[index]
 
     def on_enter(self):
-        self.game.level_index = self.index
+        if not self.custom:
+            self.game.level_index = self.index
         self.level = Level.load(self.game, self.level_name)
         self.camera = Camera(self.level.width_px, self.level.height_px)
         self.camera.update(self.level.player.rect, 0.0, snap=True)
@@ -38,6 +40,7 @@ class PlayScene(Scene):
         self.big_font = pygame.font.Font(None, 76)
         self.mode = "play"          # play | dead | complete
         self.timer = 0.0
+        self.elapsed = 0.0          # Spielzeit (für Bestzeit)
         self.paused = False
         self.ride = None            # aktuell getragene Plattform
         self._build_background()
@@ -107,10 +110,13 @@ class PlayScene(Scene):
                 c.update(dt, lvl)
             for it in lvl.items:
                 it.update(dt, lvl)
+            for st in lvl.stars:
+                st.update(dt, lvl)
             for sp in lvl.springs:
                 sp.update(dt, lvl)
             for pr in lvl.projectiles:
                 pr.update(dt, lvl)
+            self.elapsed += dt
 
             self._player_effects()
             self._collisions()
@@ -188,6 +194,18 @@ class PlayScene(Scene):
             else:
                 rem.append(it)
         lvl.items = rem
+
+        # Sterne
+        rem = []
+        for st in lvl.stars:
+            if prect.colliderect(st.rect):
+                lvl.stars_collected += 1
+                self.particles.sparkle(st.cx, st.cy, color=(255, 236, 120), n=20)
+                self.particles.text(st.cx, st.y, "Stern!", (255, 232, 120), self.font)
+                self.game.audio.play("star")
+            else:
+                rem.append(st)
+        lvl.stars = rem
 
         # Sprungfedern
         for sp in lvl.springs:
@@ -285,6 +303,10 @@ class PlayScene(Scene):
         self.game.audio.play("hurt")
 
     def _after_death(self):
+        if self.custom:
+            from .editor import EditorScene
+            self.game.scenes.switch(EditorScene(self.game, self.level_name))
+            return
         if self.game.lives <= 0:
             from .gameover import ResultScene
             self.game.scenes.switch(ResultScene(self.game, won=False,
@@ -306,7 +328,12 @@ class PlayScene(Scene):
         self.camera.update(p.rect, 0.0, snap=True)
 
     def _next_level(self):
-        self.game.record_result(self.index, self.level.player.coins)
+        if self.custom:
+            from .editor import EditorScene
+            self.game.scenes.switch(EditorScene(self.game, self.level_name))
+            return
+        self.game.record_result(self.index, self.level.player.coins,
+                                self.level.stars_collected, self.elapsed)
         nxt = self.index + 1
         self.game.unlocked = max(self.game.unlocked, nxt)
         if nxt < len(LEVEL_FILES):
@@ -342,6 +369,8 @@ class PlayScene(Scene):
             c.draw(surface, cam)
         for it in self.level.items:
             it.draw(surface, cam)
+        for st in self.level.stars:
+            st.draw(surface, cam)
         if self.level.goal:
             self.level.goal.draw(surface, cam)
         for e in self.level.enemies:
@@ -371,14 +400,24 @@ class PlayScene(Scene):
         self._text(surface, f"Münzen {p.coins}/{self.level.total_coins}",
                    self.font, (10, 8), (255, 240, 120))
         self._text(surface, f"Leben {self.game.lives}", self.font, (10, 36))
+        if self.level.total_stars:
+            self._text(surface, f"Sterne {self.level.stars_collected}/{self.level.total_stars}",
+                       self.font, (10, 64), (255, 232, 120))
+        m, s = divmod(int(self.elapsed), 60)
+        self._text(surface, f"Zeit {m}:{s:02d}", self.font, (10, 92), (200, 220, 245))
         name = self.font.render(self.level.name, True, WHITE)
         self._text(surface, self.level.name, self.font, (VIRTUAL_W - name.get_width() - 10, 8))
         boss = self.level.boss
         if boss is not None and not boss.remove:
-            self._text(surface, "Frostkönig", self.font, (VIRTUAL_W // 2 - 70, 8), (180, 220, 255))
-            for i in range(3):
+            title = "Schattenkönig" if boss.variant == "shadow" else "Frostkönig"
+            col_t = (200, 160, 255) if boss.variant == "shadow" else (180, 220, 255)
+            img = self.font.render(title, True, col_t)
+            self._text(surface, title, self.font, (VIRTUAL_W // 2 - img.get_width() // 2, 8), col_t)
+            bw = 36
+            x0 = VIRTUAL_W // 2 - (boss.max_hp * (bw + 8)) // 2
+            for i in range(boss.max_hp):
                 col = (255, 90, 90) if i < boss.hp else (70, 80, 96)
-                pygame.draw.rect(surface, col, (VIRTUAL_W // 2 - 60 + i * 44, 40, 36, 14),
+                pygame.draw.rect(surface, col, (x0 + i * (bw + 8), 40, bw, 14),
                                  border_radius=3)
 
     def _draw_pause(self, surface):

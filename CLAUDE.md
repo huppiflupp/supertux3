@@ -82,9 +82,11 @@ supertux3/
 │   │   ├── platform.py        # MovingPlatform (mit Mitnahme), Spring, Checkpoint
 │   │   └── collectible.py     # Münze, Wachstums-Item, Zielfahne
 │   └── scenes/
+│       ├── intro.py           # animierte Titel-Intro (überspringbar)
 │       ├── menu.py            # Titelmenü (nutzt title_art.png)
-│       ├── levelselect.py     # Level-Auswahl (Fortschritt via game.unlocked)
-│       ├── play.py            # Gameplay (Effekte, Power-Up, Pause, Progression)
+│       ├── levelselect.py     # Level-Auswahl 3x5 (Sterne/Bestzeit/Fortschritt)
+│       ├── editor.py          # In-Game-Level-Editor (speichern/testspielen)
+│       ├── play.py            # Gameplay (Effekte, Power-Up, Sterne/Timer, Boss)
 │       └── gameover.py        # Ergebnis-Szene (Level/Spiel geschafft / Game Over)
 ├── assets/
 │   ├── images/{characters,enemies,collectibles,tiles,props,background,ui}/
@@ -130,6 +132,21 @@ supertux3/
   `entities`/`props`); `tools/json_to_tmx.py` exportiert (verlustfreier Round-Trip).
   Konvention: firstgid=1, GID N == Spiel-Kachel-ID N.
 - **10 Level** über 5 Themes; `Level.load()` erkennt `.json` und `.tmx`.
+
+### Mechaniken (M4)
+- **8-bit-Musik neu** (`tools/asset_pipeline/gen_audio.py`): Vibrato, Arpeggien,
+  Rausch-Drums, ADSR; 7 Tracks (title/level1-3/ice/cave/**boss**). Theme→Track in
+  `world/level.py::THEMES`; Boss-Level setzen `"music":"boss.ogg"`.
+- **Sterne + Bestzeit**: `Star` (3/Level, `tools/build_levels.py::sprinkle_stars`),
+  Timer im HUD; `game.record_result(idx, coins, stars, time)` → `best_stars`/
+  `best_time`; Anzeige in der Level-Auswahl.
+- **Zweiter Boss** „Schattenkönig": `Boss(..., variant="shadow")` (lila getönt,
+  4 HP, schneller). Level-Format: `["boss", tx, ty, "shadow"]`.
+- **In-Game-Editor** (`scenes/editor.py`): Cursor-basiert, setzt Kacheln/Entities/
+  Props, Startpunkt (B), Theme (Y), speichert nach `levels/<datei>` (F5), Test (P).
+  Custom-Level via `PlayScene(game, level_name=...)`. Zugang: Menü/Level-Auswahl `E`.
+- **Intro** (`scenes/intro.py`): Spielstart zeigt Intro → Menü.
+- **15 Level** gesamt (2 Bosse).
 
 ---
 

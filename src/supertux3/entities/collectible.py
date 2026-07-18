@@ -47,6 +47,33 @@ class GrowItem(Entity):
         surface.blit(self.img, (round(self.x) - ox, round(self.y) - oy))
 
 
+class Star(Entity):
+    """Sammel-Stern (3 pro Level, für Bestwertung)."""
+
+    def __init__(self, x: float, y: float, assets):
+        img = assets.star
+        super().__init__(x, y, img.get_width(), img.get_height())
+        self.img = img
+        self.base_y = float(y)
+        self.t = (x * 0.09) % (math.pi * 2)
+
+    def update(self, dt: float, level) -> None:
+        self.t += dt * 3.0
+        self.y = self.base_y + math.sin(self.t) * 5.0
+
+    def draw(self, surface: pygame.Surface, camera) -> None:
+        ox, oy = camera.offset
+        import math as _m
+        scale = 1.0 + 0.08 * _m.sin(self.t * 2)
+        img = self.img
+        if abs(scale - 1) > 0.01:
+            w = max(1, int(img.get_width() * scale))
+            h = max(1, int(img.get_height() * scale))
+            img = pygame.transform.smoothscale(img, (w, h))
+        surface.blit(img, (int(self.cx - img.get_width() / 2 - ox),
+                           int(self.cy - img.get_height() / 2 - oy)))
+
+
 class Goal(Entity):
     """Zielfahne am Levelende."""
 

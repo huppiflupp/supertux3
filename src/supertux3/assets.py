@@ -84,6 +84,7 @@ class Assets:
             self.props[name] = load_image(IMAGE_DIR / "props" / f"{name}.png")
 
         self.item_grow = load_image(IMAGE_DIR / "collectibles" / "grow.png")
+        self.star = load_image(IMAGE_DIR / "collectibles" / "star.png")
         self.spring = slice_strip(load_image(IMAGE_DIR / "props" / "spring.png"), SPRING_FW, SPRING_FH)
         self.checkpoint = slice_strip(load_image(IMAGE_DIR / "props" / "checkpoint.png"),
                                       CHECKPOINT_FW, CHECKPOINT_FH)

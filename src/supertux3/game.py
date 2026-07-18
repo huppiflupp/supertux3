@@ -63,8 +63,8 @@ class Game:
         self.running = True
         self.scenes = SceneManager(self)
 
-        from .scenes.menu import MenuScene
-        self.scenes.switch(MenuScene(self))
+        from .scenes.intro import IntroScene
+        self.scenes.switch(IntroScene(self))
 
     def _init_joysticks(self):
         js = []
@@ -80,9 +80,23 @@ class Game:
     def best_coins(self, index: int) -> int:
         return int(self.save_data.get("best_coins", {}).get(str(index), 0))
 
-    def record_result(self, index: int, coins: int) -> None:
+    def best_stars(self, index: int) -> int:
+        return int(self.save_data.get("best_stars", {}).get(str(index), 0))
+
+    def best_time(self, index: int) -> float:
+        return float(self.save_data.get("best_time", {}).get(str(index), 0.0))
+
+    def record_result(self, index: int, coins: int, stars: int = 0,
+                      time: float | None = None) -> None:
+        key = str(index)
         bc = self.save_data.setdefault("best_coins", {})
-        bc[str(index)] = max(int(bc.get(str(index), 0)), int(coins))
+        bc[key] = max(int(bc.get(key, 0)), int(coins))
+        bs = self.save_data.setdefault("best_stars", {})
+        bs[key] = max(int(bs.get(key, 0)), int(stars))
+        if time is not None and time > 0:
+            bt = self.save_data.setdefault("best_time", {})
+            prev = float(bt.get(key, 0.0))
+            bt[key] = time if prev <= 0 else min(prev, time)
         self.save_progress()
 
     def save_progress(self) -> None:
