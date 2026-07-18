@@ -13,6 +13,7 @@ from .settings import (
 from .assets import Assets
 from .engine.audio import AudioManager
 from .engine.scene import SceneManager
+from .engine import save as savemod
 
 
 class Game:
@@ -26,6 +27,11 @@ class Game:
             pygame.mixer.init()
         except pygame.error:
             pass
+        try:
+            pygame.joystick.init()
+        except pygame.error:
+            pass
+        self.joysticks = self._init_joysticks()
 
         # Startfenstergröße = größter Faktor, der auf den Desktop passt
         info = pygame.display.Info()
@@ -46,17 +52,48 @@ class Game:
         self.audio = AudioManager()
         self._load_audio()
 
+        # Speicherstand laden
+        self.save_data = savemod.load()
+        self.unlocked = int(self.save_data.get("unlocked", 0))
+        self.audio.music_volume = float(self.save_data.get("music_volume", 0.5))
+        self.audio.muted = bool(self.save_data.get("muted", False))
+
         self.lives = START_LIVES
         self.level_index = 0
-        self.unlocked = 0          # höchster freigeschalteter Level-Index
         self.running = True
         self.scenes = SceneManager(self)
 
         from .scenes.menu import MenuScene
         self.scenes.switch(MenuScene(self))
 
+    def _init_joysticks(self):
+        js = []
+        try:
+            for i in range(pygame.joystick.get_count()):
+                j = pygame.joystick.Joystick(i)
+                j.init()
+                js.append(j)
+        except pygame.error:
+            pass
+        return js
+
+    def best_coins(self, index: int) -> int:
+        return int(self.save_data.get("best_coins", {}).get(str(index), 0))
+
+    def record_result(self, index: int, coins: int) -> None:
+        bc = self.save_data.setdefault("best_coins", {})
+        bc[str(index)] = max(int(bc.get(str(index), 0)), int(coins))
+        self.save_progress()
+
+    def save_progress(self) -> None:
+        self.save_data["unlocked"] = self.unlocked
+        self.save_data["music_volume"] = self.audio.music_volume
+        self.save_data["muted"] = self.audio.muted
+        savemod.save(self.save_data)
+
     def _load_audio(self) -> None:
-        for name in ("jump", "coin", "stomp", "hurt", "win", "spring", "grow", "checkpoint"):
+        for name in ("jump", "coin", "stomp", "hurt", "win", "spring", "grow",
+                     "checkpoint", "throw"):
             self.audio.load_sfx(name, f"{name}.wav")
 
     def _toggle_fullscreen(self) -> None:
@@ -88,6 +125,9 @@ class Game:
                     self._toggle_fullscreen()
                 elif event.type == pygame.VIDEORESIZE and not self.fullscreen:
                     self._windowed_size = (event.w, event.h)
+                elif event.type in (pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED):
+                    self.joysticks = self._init_joysticks()
+                    self.scenes.handle_event(event)
                 else:
                     self.scenes.handle_event(event)
 

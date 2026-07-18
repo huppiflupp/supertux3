@@ -66,15 +66,19 @@ supertux3/
 │   │   ├── camera.py          # weiche, begrenzte Kamera + Screen-Shake
 │   │   ├── animation.py       # Frame-Animation
 │   │   ├── particles.py       # Partikelsystem + schwebende Texte (Juice)
+│   │   ├── controls.py        # zentrale Steuerung: Tastatur + Gamepad
+│   │   ├── save.py            # Speicherstand (Fortschritt, Highscores, Audio)
 │   │   ├── spritesheet.py     # Bild laden + Streifen/Grid schneiden (fehlertolerant)
 │   │   └── audio.py           # Musik + SFX (fehlertolerant, Lautstärke/Mute)
 │   ├── world/
 │   │   ├── tilemap.py         # Kachelgitter: Kollision + Darstellung
-│   │   └── level.py           # Levelformat + Themes -> Welt aufbauen
+│   │   ├── tmx.py             # Tiled-TMX-Import (CSV-Layer + Objektgruppen)
+│   │   └── level.py           # Levelformat/TMX + Themes -> Welt aufbauen
 │   ├── entities/
 │   │   ├── entity.py          # Basis: Physik + Kachel-/Plattform-Kollision
 │   │   ├── player.py          # "Pengu" klein/groß, Squash/Stretch, Power-Up
 │   │   ├── enemy.py           # Schneeball / Stachler (nicht stampfbar) / Flieger
+│   │   ├── boss.py            # "Frostkönig" (3 Treffer) + Eis-Projektile
 │   │   ├── platform.py        # MovingPlatform (mit Mitnahme), Spring, Checkpoint
 │   │   └── collectible.py     # Münze, Wachstums-Item, Zielfahne
 │   └── scenes/
@@ -86,13 +90,14 @@ supertux3/
 │   ├── images/{characters,enemies,collectibles,tiles,props,background,ui}/
 │   ├── audio/{music,sfx}/
 │   └── fonts/
-├── levels/level1..6.json      # 6 Level (per tools/build_levels.py erzeugt)
+├── levels/level1..10.json     # 10 Level (per tools/build_levels.py erzeugt)
 ├── tools/
 │   ├── asset_pipeline/
-│   │   ├── gen_pixelart.py     # HD-Sprites/Kacheln/Props (PIL, supersampled)
+│   │   ├── gen_pixelart.py     # HD-Sprites/Kacheln/Props/Boss (PIL, supersampled)
 │   │   ├── gen_audio.py        # Musik (level1/2/ice/title) + SFX (numpy)
 │   │   └── comfy_gen.py        # FLUX-Hintergründe via ComfyUI-API (stdlib)
-│   └── build_levels.py         # baut levels/level1..6.json deterministisch
+│   ├── build_levels.py         # baut levels/level1..10.json deterministisch
+│   └── json_to_tmx.py          # exportiert ein JSON-Level nach Tiled-TMX
 ├── docs/
 │   ├── PLAN.md                 # Fahrplan / Vision / Roadmap
 │   └── asset_pipeline.md       # ComfyUI/FLUX-Setup & Nutzung
@@ -111,6 +116,20 @@ supertux3/
   Tod-Poof, Sparkle, schwebende Punkte) + Kamera-Shake + Squash/Stretch.
 - **Progression**: `settings.LEVEL_FILES`, `game.unlocked`; Ziel → nächstes Level.
 - **Pause** (P/ESC) mit Lautstärke (`+`/`-`), Neustart (R), Level-Auswahl (Q).
+
+### Mechaniken (M3)
+- **Speichern/Highscores**: `engine/save.py` (XDG-Datenverzeichnis
+  `~/.local/share/supertux3/save.json`); `game.unlocked`, `best_coins` je Level,
+  Lautstärke/Mute. `game.record_result()` / `game.save_progress()`.
+- **Gamepad**: `engine/controls.py` übersetzt Tastatur + Joystick in Menü-Aktionen;
+  der Spieler liest Stick/D-Pad/A-Button direkt. Automatisches Erkennen beim
+  Ein-/Ausstecken.
+- **Boss „Frostkönig"** (`entities/boss.py`): 3 Stampf-Treffer, wird schneller,
+  wirft Eis-Projektile; Boss-Level 10, Sieg = Spiel durchgespielt.
+- **Tiled-Import**: `world/tmx.py` lädt `.tmx` (CSV-Layer + Objektgruppen
+  `entities`/`props`); `tools/json_to_tmx.py` exportiert (verlustfreier Round-Trip).
+  Konvention: firstgid=1, GID N == Spiel-Kachel-ID N.
+- **10 Level** über 5 Themes; `Level.load()` erkennt `.json` und `.tmx`.
 
 ---
 

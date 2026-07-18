@@ -42,6 +42,10 @@ class B:
                 self.put(x0 + i, y, ch)
             self.put(x0 + i, GROUND - i, top)
 
+    def wall(self, x, y0, y1, ch="S"):
+        for y in range(y0, y1 + 1):
+            self.put(x, y, ch)
+
     def coins(self, x0, x1, y):
         for x in range(x0, x1 + 1):
             self.ent.append(["coin", x, y])
@@ -228,9 +232,99 @@ def level6():
     b.dump(LV / "level6.json", "Kristallhöhle", "cave")
 
 
+# --- Level 7: Frostwind-Grat (Eis) --------------------------------------
+def level7():
+    b = B(170)
+    pits = [(28, 32), (54, 60), (86, 91), (118, 124), (146, 151)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="I", fill="I"); x = c + 1
+    b.ground(x, 169, ch="I", fill="I")
+    for x0, x1, y in [(20, 26, 10), (66, 72, 9), (100, 106, 10), (132, 138, 9)]:
+        b.plat(x0, x1, y, "I")
+    b.e("mplat", 54, 11, 60, 8, 3); b.e("mplat", 118, 12, 124, 12, 3)
+    b.e("spring", 26, FLOOR); b.e("spring", 84, FLOOR); b.e("spring", 144, FLOOR)
+    b.arc(30, 8); b.arc(57, 9); b.arc(88, 8); b.arc(121, 9); b.arc(148, 8)
+    b.coins(66, 72, 8); b.coins(100, 106, 9); b.coins(132, 138, 8)
+    b.e("growth", 68, 7)
+    for ex in (18, 46, 78, 110, 158):
+        b.e("spiky", ex, FLOOR)
+    for ex in (40, 96):
+        b.e("snowball", ex, FLOOR)
+    b.e("flyer", 62, 7, 6); b.e("flyer", 128, 6, 7)
+    b.e("checkpoint", 92, FLOOR); b.e("goal", 166, FLOOR)
+    b.dump(LV / "level7.json", "Frostwind-Grat", "ice")
+
+
+# --- Level 8: Tiefe Stollen (Höhle) -------------------------------------
+def level8():
+    b = B(175)
+    pits = [(24, 29), (48, 54), (78, 84), (108, 114), (138, 143), (158, 163)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="S", fill="S"); x = c + 1
+    b.ground(x, 174, ch="S", fill="S")
+    for x0, x1, y in [(34, 40, 10), (66, 72, 9), (96, 102, 11), (126, 132, 9)]:
+        b.plat(x0, x1, y, "S")
+    b.e("mplat", 48, 12, 54, 9, 3); b.e("mplat", 108, 11, 114, 11, 3)
+    b.e("spring", 22, FLOOR); b.e("spring", 76, FLOOR); b.e("spring", 136, FLOOR)
+    for cx in (26, 50, 80, 110, 140):
+        b.arc(cx, 9)
+    b.coins(66, 72, 8); b.coins(96, 102, 10); b.coins(126, 132, 8)
+    b.e("growth", 36, 8)
+    for ex in (16, 44, 90, 150, 170):
+        b.e("spiky", ex, FLOOR)
+    for ex in (60, 120):
+        b.e("snowball", ex, FLOOR)
+    b.e("flyer", 70, 7, 6); b.e("flyer", 130, 6, 7)
+    b.e("checkpoint", 86, FLOOR); b.e("goal", 171, FLOOR)
+    b.dump(LV / "level8.json", "Tiefe Stollen", "cave")
+
+
+# --- Level 9: Sternenhimmel (Nacht) -------------------------------------
+def level9():
+    b = B(175)
+    b.ground(0, 14)
+    b.ground(22, 34); b.ground(44, 58); b.ground(76, 92)
+    b.ground(112, 128); b.ground(156, 174)
+    b.e("mplat", 15, 12, 21, 12, 3)
+    b.e("mplat", 35, 12, 43, 9, 3)
+    b.e("mplat", 59, 11, 75, 11, 3)
+    b.e("mplat", 93, 10, 111, 13, 3)
+    b.e("mplat", 129, 12, 155, 12, 4)
+    for cx in (18, 39, 66, 102, 142):
+        b.arc(cx, 9)
+    b.coins(24, 32, 12); b.coins(46, 56, 12); b.coins(78, 90, 12); b.coins(114, 126, 12)
+    b.e("growth", 50, 12)
+    for ex in (26, 50, 82, 118, 164):
+        b.e("snowball", ex, FLOOR)
+    for ex in (30, 86, 122):
+        b.e("spiky", ex, FLOOR)
+    b.e("flyer", 40, 7, 6); b.e("flyer", 96, 6, 8); b.e("flyer", 140, 8, 6)
+    b.e("spring", 12, FLOOR); b.e("spring", 166, FLOOR)
+    b.e("checkpoint", 84, FLOOR); b.e("goal", 171, FLOOR)
+    for t, y in [(10, 1), (48, 2), (96, 1), (140, 2)]:
+        b.prop("cloud", t, y)
+    b.dump(LV / "level9.json", "Sternenhimmel", "night")
+
+
+# --- Level 10: Frostkönigs Festung (Boss) -------------------------------
+def level10():
+    b = B(46)
+    b.ground(0, 45, ch="S", fill="S")
+    b.wall(1, 3, GROUND - 1); b.wall(2, 3, GROUND - 1)
+    b.wall(44, 3, GROUND - 1); b.wall(43, 3, GROUND - 1)
+    b.plat(9, 13, 11, "S"); b.plat(33, 37, 11, "S")
+    b.arc(15, 9); b.arc(31, 9); b.coins(21, 25, 8)
+    b.e("growth", 6, FLOOR)
+    b.e("boss", 23, FLOOR)
+    b.dump(LV / "level10.json", "Frostkönigs Festung", "cave")
+
+
 def main():
     print("Baue Level ->", LV)
-    for fn in (level1, level2, level3, level4, level5, level6):
+    for fn in (level1, level2, level3, level4, level5, level6,
+               level7, level8, level9, level10):
         fn()
     print("Fertig.")
 

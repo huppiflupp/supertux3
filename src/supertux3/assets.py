@@ -21,6 +21,8 @@ FLYER_FW, FLYER_FH = 40, 28
 SPIKY_FW, SPIKY_FH = 36, 34
 SPRING_FW, SPRING_FH = 32, 24
 CHECKPOINT_FW, CHECKPOINT_FH = 32, 64
+BOSS_FW, BOSS_FH = 64, 60
+BOSS_LAYOUT = ["walk0", "walk1", "hurt"]
 
 
 def _named(frames, layout):
@@ -70,6 +72,13 @@ class Assets:
         }
         self.flyer = slice_strip(load_image(IMAGE_DIR / "enemies" / "flyer.png"), FLYER_FW, FLYER_FH)
         self.spiky = slice_strip(load_image(IMAGE_DIR / "enemies" / "spiky.png"), SPIKY_FW, SPIKY_FH)
+        bframes = slice_strip(load_image(IMAGE_DIR / "enemies" / "boss.png"), BOSS_FW, BOSS_FH)
+        bn = _named(bframes, BOSS_LAYOUT)
+        self.boss = {
+            "walk": [bn.get("walk0", bframes[0]), bn.get("walk1", bframes[0])],
+            "hurt": [bn.get("hurt", bframes[-1])],
+        }
+        self.iceball = load_image(IMAGE_DIR / "enemies" / "iceball.png")
 
         for name in ("bush", "cloud", "tree", "flag"):
             self.props[name] = load_image(IMAGE_DIR / "props" / f"{name}.png")

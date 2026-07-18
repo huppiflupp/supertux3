@@ -24,11 +24,11 @@ class ResultScene(Scene):
             self.game.audio.stop_music()
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE):
-                from .levelselect import LevelSelectScene
-                self.game.lives = START_LIVES
-                self.game.scenes.switch(LevelSelectScene(self.game))
+        from ..engine.controls import nav
+        if nav(event) in ("confirm", "back"):
+            from .levelselect import LevelSelectScene
+            self.game.lives = START_LIVES
+            self.game.scenes.switch(LevelSelectScene(self.game))
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill((24, 34, 58) if not self.won else (32, 64, 40))

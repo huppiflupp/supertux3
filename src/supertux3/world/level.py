@@ -28,6 +28,7 @@ from ..entities.player import Player, FORM
 from ..entities.enemy import Snowball, Spiky, Flyer
 from ..entities.collectible import Coin, GrowItem, Goal
 from ..entities.platform import MovingPlatform, Spring, Checkpoint
+from ..entities.boss import Boss
 
 # Theme -> (Hintergrund, Musik)
 THEMES = {
@@ -59,6 +60,8 @@ class Level:
         self.springs: list[Spring] = []
         self.checkpoints: list[Checkpoint] = []
         self.platforms: list[MovingPlatform] = []
+        self.projectiles: list = []
+        self.boss = None
         self.goal: Goal | None = None
 
         A = game.assets
@@ -90,6 +93,9 @@ class Level:
                 wt = e[5] if len(e) > 5 else 3
                 self.platforms.append(MovingPlatform(e[1] * TILE, e[2] * TILE,
                                                      x2 * TILE, y2 * TILE, wt))
+            elif k == "boss":
+                self.boss = Boss(e[1] * TILE, (e[2] + 1) * TILE, A)
+                self.enemies.append(self.boss)
             elif k == "goal":
                 self.goal = Goal(e[1] * TILE, (e[2] + 1) * TILE, A)
 
@@ -117,6 +123,10 @@ class Level:
         path = Path(name)
         if not path.exists():
             path = LEVEL_DIR / name
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        if path.suffix.lower() == ".tmx":
+            from .tmx import parse_tmx
+            data = parse_tmx(path)
+        else:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
         return cls(game, data)

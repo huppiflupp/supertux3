@@ -55,28 +55,33 @@ class PlayScene(Scene):
 
     # --- Events ------------------------------------------------------
     def handle_event(self, event):
-        if event.type != pygame.KEYDOWN:
-            return
+        from ..engine.controls import nav
+        act = nav(event)
         if self.paused:
-            if event.key in (pygame.K_ESCAPE, pygame.K_p):
+            key = event.key if event.type == pygame.KEYDOWN else None
+            if act in ("pause", "back", "confirm") or key == pygame.K_p:
                 self.paused = False
-            elif event.key == pygame.K_r:
+            elif key == pygame.K_r:
                 self.paused = False
                 self.on_enter()
-            elif event.key == pygame.K_q:
+            elif key == pygame.K_q:
                 from .levelselect import LevelSelectScene
                 self.game.scenes.switch(LevelSelectScene(self.game))
-            elif event.key == pygame.K_m:
+            elif key == pygame.K_m:
                 self.game.audio.toggle_mute()
-            elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+                self.game.save_progress()
+            elif key in (pygame.K_MINUS, pygame.K_KP_MINUS):
                 self.game.audio.change_music_volume(-0.1)
-            elif event.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
+                self.game.save_progress()
+            elif key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
                 self.game.audio.change_music_volume(0.1)
+                self.game.save_progress()
             return
-        if event.key in (pygame.K_ESCAPE, pygame.K_p):
+        if act in ("pause", "back") or (event.type == pygame.KEYDOWN and event.key == pygame.K_p):
             self.paused = True
-        elif event.key == pygame.K_m:
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_m:
             self.game.audio.toggle_mute()
+            self.game.save_progress()
 
     # --- Update ------------------------------------------------------
     def update(self, dt):
@@ -104,10 +109,13 @@ class PlayScene(Scene):
                 it.update(dt, lvl)
             for sp in lvl.springs:
                 sp.update(dt, lvl)
+            for pr in lvl.projectiles:
+                pr.update(dt, lvl)
 
             self._player_effects()
             self._collisions()
             lvl.enemies = [e for e in lvl.enemies if not getattr(e, "remove", False)]
+            lvl.projectiles = [pr for pr in lvl.projectiles if not getattr(pr, "remove", False)]
 
             if lvl.player.y > lvl.height_px + 80:
                 self._die()
@@ -202,11 +210,34 @@ class PlayScene(Scene):
                 self.particles.text(cp.cx, cp.y, "Checkpoint!", (150, 255, 170), self.font)
                 self.game.audio.play("checkpoint")
 
+        # Projektile (z.B. Boss-Eisbälle)
+        for pr in lvl.projectiles:
+            if prect.colliderect(pr.rect):
+                pr.remove = True
+                self._hurt_player(p)
+                if p.dead or self.mode == "dead":
+                    break
+
         # Gegner
         for e in lvl.enemies:
             if getattr(e, "squashed", False) or not prect.colliderect(e.rect):
                 continue
-            if getattr(e, "stompable", False) and p.vy > 0 and (prect.bottom - e.rect.top) <= 24:
+            is_boss = getattr(e, "is_boss", False)
+            stomping = getattr(e, "stompable", False) and p.vy > 0 and (prect.bottom - e.rect.top) <= 24
+            if is_boss:
+                if stomping and e.hit():
+                    p.bounce(1.1)
+                    self.particles.stomp(e.rect.centerx, e.rect.top)
+                    self.camera.add_shake(4.0, 0.25)
+                    self.game.audio.play("stomp")
+                    if e.defeated:
+                        self.particles.poof(e.rect.centerx, e.rect.centery,
+                                            color=(200, 230, 255), n=40)
+                        self.camera.add_shake(8.0, 0.5)
+                        self._win()
+                elif not stomping and e.invuln <= 0:
+                    self._hurt_player(p)
+            elif stomping:
                 e.stomp()
                 p.bounce()
                 self.particles.stomp(e.rect.centerx, e.rect.centery)
@@ -214,23 +245,31 @@ class PlayScene(Scene):
                 self.camera.add_shake(3.0, 0.18)
                 self.game.audio.play("stomp")
             else:
-                out = p.take_hit()
-                if out == "die":
-                    self._die()
-                    break
-                elif out == "shrink":
-                    p.vx = -240 * p.facing
-                    p.vy = -300
-                    self.particles.poof(p.cx, p.cy, color=(255, 210, 210), n=16)
-                    self.camera.add_shake(4.0, 0.25)
-                    self.game.audio.play("hurt")
+                self._hurt_player(p)
+            if self.mode != "play":
+                break
 
         # Ziel
-        if lvl.goal and prect.colliderect(lvl.goal.rect):
-            self.mode = "complete"
-            self.timer = 2.0
-            self.particles.sparkle(prect.centerx, prect.centery, color=(255, 240, 140), n=30)
-            self.game.audio.play("win")
+        if self.mode == "play" and lvl.goal and prect.colliderect(lvl.goal.rect):
+            self._win()
+
+    def _hurt_player(self, p):
+        out = p.take_hit()
+        if out == "die":
+            self._die()
+        elif out == "shrink":
+            p.vx = -240 * p.facing
+            p.vy = -300
+            self.particles.poof(p.cx, p.cy, color=(255, 210, 210), n=16)
+            self.camera.add_shake(4.0, 0.25)
+            self.game.audio.play("hurt")
+
+    def _win(self):
+        self.mode = "complete"
+        self.timer = 2.2
+        p = self.level.player
+        self.particles.sparkle(p.rect.centerx, p.rect.centery, color=(255, 240, 140), n=30)
+        self.game.audio.play("win")
 
     def _die(self):
         if self.mode == "dead":
@@ -267,6 +306,7 @@ class PlayScene(Scene):
         self.camera.update(p.rect, 0.0, snap=True)
 
     def _next_level(self):
+        self.game.record_result(self.index, self.level.player.coins)
         nxt = self.index + 1
         self.game.unlocked = max(self.game.unlocked, nxt)
         if nxt < len(LEVEL_FILES):
@@ -306,6 +346,8 @@ class PlayScene(Scene):
             self.level.goal.draw(surface, cam)
         for e in self.level.enemies:
             e.draw(surface, cam)
+        for pr in self.level.projectiles:
+            pr.draw(surface, cam)
         self.level.player.draw(surface, cam)
         self.particles.draw(surface, cam)
         self._draw_hud(surface)
@@ -331,6 +373,13 @@ class PlayScene(Scene):
         self._text(surface, f"Leben {self.game.lives}", self.font, (10, 36))
         name = self.font.render(self.level.name, True, WHITE)
         self._text(surface, self.level.name, self.font, (VIRTUAL_W - name.get_width() - 10, 8))
+        boss = self.level.boss
+        if boss is not None and not boss.remove:
+            self._text(surface, "Frostkönig", self.font, (VIRTUAL_W // 2 - 70, 8), (180, 220, 255))
+            for i in range(3):
+                col = (255, 90, 90) if i < boss.hp else (70, 80, 96)
+                pygame.draw.rect(surface, col, (VIRTUAL_W // 2 - 60 + i * 44, 40, 36, 14),
+                                 border_radius=3)
 
     def _draw_pause(self, surface):
         veil = pygame.Surface((VIRTUAL_W, VIRTUAL_H), pygame.SRCALPHA)

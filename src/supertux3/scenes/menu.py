@@ -23,15 +23,17 @@ class MenuScene(Scene):
         self.game.audio.play_music("title.ogg")
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                from .levelselect import LevelSelectScene
-                self.game.lives = START_LIVES
-                self.game.scenes.switch(LevelSelectScene(self.game))
-            elif event.key == pygame.K_ESCAPE:
-                self.game.running = False
-            elif event.key == pygame.K_m:
-                self.game.audio.toggle_mute()
+        from ..engine.controls import nav
+        act = nav(event)
+        if act == "confirm":
+            from .levelselect import LevelSelectScene
+            self.game.lives = START_LIVES
+            self.game.scenes.switch(LevelSelectScene(self.game))
+        elif act == "back":
+            self.game.running = False
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_m:
+            self.game.audio.toggle_mute()
+            self.game.save_progress()
 
     def update(self, dt: float) -> None:
         self.t += dt

@@ -39,12 +39,21 @@ Parallax, Zielobjekt), nicht den Code.
       Screen-Shake, Squash/Stretch
 - [x] Pause-Menü mit Lautstärke, Neustart, Level-Auswahl
 
-### M3 — Ausbau
-- [ ] Level-Editor bzw. **Tiled**-Import (TMX)
-- [ ] Mehrere Welten/Themes (Eis, Höhle) inkl. eigener FLUX-Kulissen
-- [ ] Speichern/Fortschritt, Highscores
-- [ ] Gamepad-Unterstützung
-- [ ] Boss am Weltende
+### M3 — Ausbau ✅
+- [x] **Tiled-TMX-Import** (`world/tmx.py`) + JSON→TMX-Export (`tools/json_to_tmx.py`),
+      verlustfreier Round-Trip
+- [x] 10 Level über 5 Themes (Gras/Sonnenuntergang/Nacht/Eis/Höhle) inkl.
+      eigener FLUX-Kulissen
+- [x] Speichern/Fortschritt + Highscores (Bestmünzen je Level, `engine/save.py`,
+      XDG-Datenverzeichnis)
+- [x] Gamepad-Unterstützung (`engine/controls.py`: Stick/D-Pad/Buttons, Menüs)
+- [x] Boss am Weltende: „Frostkönig" (3 Treffer, Eis-Projektile, Boss-Level 10)
+
+### M4 — Ideen (offen)
+- [ ] Level-Editor im Spiel; mehr Boss-Typen; Zwischengegner-Vielfalt
+- [ ] Zeit-/Score-Bestenlisten, Sammel-Sterne pro Level
+- [ ] Story/Intro-Sequenz, Übergänge zwischen Welten
+- [ ] Online-/Steam-Deck-Feinschliff
 
 ## Asset-Strategie
 - **Spielfertige Sprites** (Held, Gegner, Kacheln, Münzen): prozedural (PIL),

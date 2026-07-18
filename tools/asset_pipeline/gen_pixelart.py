@@ -522,6 +522,67 @@ def gen_grow():
     _save(p.result(), "collectibles", "grow.png")
 
 
+# =========================================================================
+#  Boss „Frostkönig" (64x60, 3 Frames: walk0, walk1, hurt)
+# =========================================================================
+def draw_boss(step: int, hurt: bool = False) -> Image.Image:
+    p = Pen(64, 60)
+    SNOW = (238, 246, 255, 255)
+    SNOW_SH = (196, 214, 238, 255)
+    GOLD = (255, 208, 60, 255)
+    GOLD_LO = (206, 150, 30, 255)
+    # Körper
+    p.ellipse([7, 15, 57, 59], fill=OUT)
+    p.ellipse([8, 16, 56, 58], fill=SNOW)
+    p.ellipse([12, 34, 52, 57], fill=SNOW_SH)
+    p.ellipse([10, 17, 48, 40], fill=SNOW)
+    p.ellipse([16, 20, 34, 33], fill=WHITE)
+    # Krone
+    p.rect([20, 12, 44, 17], fill=GOLD)
+    for cx in (20, 32, 44):
+        p.poly([(cx - 4, 13), (cx, 3), (cx + 4, 13)], fill=GOLD)
+        p.ellipse([cx - 2, 1, cx + 2, 5], fill=(255, 240, 160, 255))
+    p.line([(21, 16), (43, 16)], width=1, fill=GOLD_LO)
+    # Arme
+    p.ellipse([2, 34, 12, 46], fill=SNOW); p.ellipse([2, 34, 12, 46], outline=SNOW_SH)
+    p.ellipse([52, 34, 62, 46], fill=SNOW); p.ellipse([52, 34, 62, 46], outline=SNOW_SH)
+    # Gesicht
+    if hurt:
+        for ex in (25, 39):
+            p.line([(ex - 3, 26), (ex + 3, 32)], width=1.3, fill=PUP)
+            p.line([(ex + 3, 26), (ex - 3, 32)], width=1.3, fill=PUP)
+        p.ellipse([28, 36, 36, 44], fill=PUP)   # offener Mund
+    else:
+        for ex in (25, 39):
+            p.ellipse([ex - 3.5, 25, ex + 3.5, 33], fill=WHITE, outline=(150, 165, 185, 255))
+            p.ellipse([ex - 1, 27, ex + 2.5, 32], fill=PUP)
+            p.ellipse([ex, 27.5, ex + 1.2, 29], fill=WHITE)
+        p.line([(20, 22), (30, 25)], width=1.4, fill=(40, 50, 70, 255))   # Brauen
+        p.line([(44, 22), (34, 25)], width=1.4, fill=(40, 50, 70, 255))
+        p.arc([26, 38, 38, 46], 190, 350, width=1.4, fill=PUP)            # finster
+    # Füße
+    fo = 3 if step == 0 else -3
+    for cx in (22, 42):
+        off = fo if cx == 42 else -fo
+        p.ellipse([cx - 6 + off, 55, cx + 6 + off, 60], fill=FOOT)
+        p.ellipse([cx - 6 + off, 57, cx + 6 + off, 60], fill=FOOT_LO)
+    return p.result()
+
+
+def gen_boss():
+    _save(_sheet([draw_boss(0), draw_boss(1), draw_boss(0, hurt=True)], 64, 60),
+          "enemies", "boss.png")
+
+
+def gen_iceball():
+    p = Pen(16, 16)
+    p.ellipse([1, 1, 15, 15], fill=(120, 190, 230, 255))
+    p.ellipse([2, 2, 14, 14], fill=(176, 224, 246, 255))
+    p.poly([(8, 2), (10, 8), (8, 14), (6, 8)], fill=(210, 240, 252, 255))
+    p.line([(4, 5), (8, 9)], width=1, fill=WHITE)
+    _save(p.result(), "enemies", "iceball.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_tileset()
@@ -531,6 +592,8 @@ def main():
     gen_snowball()
     gen_flyer()
     gen_spiky()
+    gen_boss()
+    gen_iceball()
     gen_spring()
     gen_checkpoint()
     gen_grow()

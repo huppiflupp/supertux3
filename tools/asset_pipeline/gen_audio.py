@@ -233,6 +233,15 @@ def sfx_checkpoint() -> np.ndarray:
     return np.concatenate([a, b]) * 0.45
 
 
+def sfx_throw() -> np.ndarray:
+    n = int(0.20 * SR)
+    t = np.arange(n) / SR
+    f = np.linspace(900, 300, n)
+    ph = np.cumsum(2 * np.pi * f / SR)
+    noise = np.random.uniform(-1, 1, n) * 0.3
+    return (np.sin(ph) * 0.7 + noise) * np.exp(-t * 8) * 0.35
+
+
 # --- weitere Musik -------------------------------------------------------
 def level2_music() -> np.ndarray:
     bpm = 156
@@ -284,7 +293,7 @@ def main() -> None:
     write_ogg(AUD / "music" / "title.ogg", title_music())
     for name, fn in [("jump", sfx_jump), ("coin", sfx_coin), ("stomp", sfx_stomp),
                      ("hurt", sfx_hurt), ("win", sfx_win), ("spring", sfx_spring),
-                     ("grow", sfx_grow), ("checkpoint", sfx_checkpoint)]:
+                     ("grow", sfx_grow), ("checkpoint", sfx_checkpoint), ("throw", sfx_throw)]:
         write_wav(AUD / "sfx" / f"{name}.wav", fn())
         print(f"  sfx/{name}.wav")
     print("Fertig.")

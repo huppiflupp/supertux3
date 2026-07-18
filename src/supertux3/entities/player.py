@@ -5,6 +5,7 @@ import pygame
 
 from .entity import Entity
 from ..engine.animation import Animation
+from ..engine import controls
 from ..settings import (
     MOVE_ACCEL, AIR_ACCEL, MAX_RUN_SPEED, GROUND_FRICTION,
     JUMP_SPEED, JUMP_CUTOFF, COYOTE_TIME, JUMP_BUFFER, STOMP_BOUNCE,
@@ -80,10 +81,12 @@ class Player(Entity):
         was_ground = self.on_ground
 
         keys = pygame.key.get_pressed()
-        left = any(keys[k] for k in LEFT_KEYS)
-        right = any(keys[k] for k in RIGHT_KEYS)
-        jump_held = any(keys[k] for k in JUMP_KEYS)
-        self.ducking = any(keys[k] for k in DUCK_KEYS) and self.on_ground
+        js = level.game.joysticks
+        jmove = controls.move_x(js)
+        left = any(keys[k] for k in LEFT_KEYS) or jmove < 0
+        right = any(keys[k] for k in RIGHT_KEYS) or jmove > 0
+        jump_held = any(keys[k] for k in JUMP_KEYS) or controls.want_jump(js)
+        self.ducking = (any(keys[k] for k in DUCK_KEYS) or controls.want_duck(js)) and self.on_ground
 
         move = (1 if right else 0) - (1 if left else 0)
         accel = MOVE_ACCEL if self.on_ground else AIR_ACCEL
