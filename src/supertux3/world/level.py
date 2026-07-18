@@ -2,12 +2,17 @@
 
 Levelformat (JSON), Koordinaten in Kacheln:
 {
-  "name": "Grüne Hügel 1",
-  "music": "level1.ogg",
+  "name": "...", "theme": "grass|sunset|night|ice|cave",
+  "background": "datei.png" (optional, überschreibt Theme),
+  "music": "datei.ogg" (optional),
   "spawn": [tx, ty],
-  "solid": ["Zeilen aus Zeichen (siehe tilemap.CHAR_TO_TILE)"],
-  "props":  [["bush", tx, ty], ...],          # dekorativ, unten bündig
-  "entities": [["coin", tx, ty], ["snowball", tx, ty], ["goal", tx, ty]]
+  "solid": ["Zeilen (siehe tilemap.CHAR_TO_TILE)"],
+  "props":  [["bush", tx, ty], ...],
+  "entities": [
+     ["coin", tx, ty], ["snowball", tx, ty], ["spiky", tx, ty],
+     ["flyer", tx, ty, patrol?], ["growth", tx, ty], ["spring", tx, ty],
+     ["checkpoint", tx, ty], ["mplat", tx, ty, tx2, ty2, wtiles?], ["goal", tx, ty]
+  ]
 }
 """
 from __future__ import annotations
@@ -19,46 +24,85 @@ import pygame
 
 from .tilemap import Tilemap
 from ..settings import TILE, LEVEL_DIR
-from ..entities.player import Player, HITBOX_H
-from ..entities.enemy import Snowball
-from ..entities.collectible import Coin, Goal
+from ..entities.player import Player, FORM
+from ..entities.enemy import Snowball, Spiky, Flyer
+from ..entities.collectible import Coin, GrowItem, Goal
+from ..entities.platform import MovingPlatform, Spring, Checkpoint
+
+# Theme -> (Hintergrund, Musik)
+THEMES = {
+    "grass":  ("sky_parallax.png", "level1.ogg"),
+    "sunset": ("sunset_hills.png", "level2.ogg"),
+    "night":  ("night_hills.png", "level2.ogg"),
+    "ice":    ("ice_mountains.png", "ice.ogg"),
+    "cave":   ("cave.png", "ice.ogg"),
+}
 
 
 class Level:
     def __init__(self, game, data: dict):
         self.game = game
         self.name = data.get("name", "Unbenannt")
-        self.music = data.get("music")
+        theme = data.get("theme", "grass")
+        bg_default, music_default = THEMES.get(theme, THEMES["grass"])
+        self.background_name = data.get("background", bg_default)
+        self.music = data.get("music", music_default)
         self.tilemap = Tilemap(data.get("solid", []), game.assets.tileset, TILE)
 
         sx, sy = data.get("spawn", [2, 2])
         self.spawn_px = (sx * TILE, (sy + 1) * TILE)
-        self.player = Player(sx * TILE, (sy + 1) * TILE - HITBOX_H, game.assets)
+        self.player = Player(sx * TILE, (sy + 1) * TILE - FORM["small"][3], game.assets)
 
         self.coins: list[Coin] = []
-        self.enemies: list[Snowball] = []
+        self.items: list[GrowItem] = []
+        self.enemies: list = []
+        self.springs: list[Spring] = []
+        self.checkpoints: list[Checkpoint] = []
+        self.platforms: list[MovingPlatform] = []
         self.goal: Goal | None = None
-        for ent in data.get("entities", []):
-            kind, tx, ty = ent[0], ent[1], ent[2]
-            if kind == "coin":
-                self.coins.append(Coin(tx * TILE + (TILE - 12) // 2,
-                                       ty * TILE + (TILE - 12) // 2, game.assets))
-            elif kind == "snowball":
-                sb = Snowball(tx * TILE, 0, game.assets)
-                sb.y = (ty + 1) * TILE - sb.h
-                self.enemies.append(sb)
-            elif kind == "goal":
-                self.goal = Goal(tx * TILE, (ty + 1) * TILE, game.assets)
 
-        # Dekor-Props (Bild, x, y unten bündig)
+        A = game.assets
+        for e in data.get("entities", []):
+            k = e[0]
+            if k == "coin":
+                self.coins.append(Coin(e[1] * TILE + (TILE - 24) // 2,
+                                       e[2] * TILE + (TILE - 24) // 2, A))
+            elif k == "growth":
+                iw = A.item_grow.get_width()
+                self.items.append(GrowItem(e[1] * TILE + (TILE - iw) // 2,
+                                           e[2] * TILE + (TILE - iw) // 2, A))
+            elif k == "snowball":
+                s = Snowball(e[1] * TILE, 0, A); s.y = (e[2] + 1) * TILE - s.h
+                self.enemies.append(s)
+            elif k == "spiky":
+                s = Spiky(e[1] * TILE, 0, A); s.y = (e[2] + 1) * TILE - s.h
+                self.enemies.append(s)
+            elif k == "flyer":
+                patrol = e[3] if len(e) > 3 else 6
+                self.enemies.append(Flyer(e[1] * TILE, e[2] * TILE, A, patrol))
+            elif k == "spring":
+                self.springs.append(Spring(e[1] * TILE, (e[2] + 1) * TILE, A))
+            elif k == "checkpoint":
+                self.checkpoints.append(Checkpoint(e[1] * TILE, (e[2] + 1) * TILE, A))
+            elif k == "mplat":
+                x2 = e[3] if len(e) > 3 else e[1]
+                y2 = e[4] if len(e) > 4 else e[2]
+                wt = e[5] if len(e) > 5 else 3
+                self.platforms.append(MovingPlatform(e[1] * TILE, e[2] * TILE,
+                                                     x2 * TILE, y2 * TILE, wt))
+            elif k == "goal":
+                self.goal = Goal(e[1] * TILE, (e[2] + 1) * TILE, A)
+
         self.props: list[tuple[pygame.Surface, int, int]] = []
         for p in data.get("props", []):
-            name, tx, ty = p[0], p[1], p[2]
-            img = game.assets.props.get(name)
+            img = A.props.get(p[0])
             if img:
-                self.props.append((img, tx * TILE, (ty + 1) * TILE - img.get_height()))
+                self.props.append((img, p[1] * TILE, (p[2] + 1) * TILE - img.get_height()))
 
         self.total_coins = len(self.coins)
+
+    def platform_rects(self):
+        return [p.rect for p in self.platforms]
 
     @property
     def width_px(self) -> int:

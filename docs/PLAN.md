@@ -29,13 +29,15 @@ Parallax, Zielobjekt), nicht den Code.
 - [x] FLUX-Hintergründe + Titelbild (ComfyUI, lokale RTX 5080)
 - [x] Level 1 „Grüne Hügel 1", Headless-Smoke-Tests
 
-### M2 — Mehr Spiel (nächste Schritte)
-- [ ] 2–3 weitere Level + Level-Auswahl / Welt-Karte
-- [ ] Power-Up-Zustände (klein/groß, Treffer verkleinert statt sofort Leben weg)
-- [ ] 2. Gegnertyp (z.B. fliegend oder springend)
-- [ ] Bewegliche Plattformen, Sprungfedern, Checkpoints
-- [ ] Partikel & „Juice" (Münz-Funken, Stampf-Staub, Screen-Shake)
-- [ ] Pause-Menü, Optionen (Lautstärke, Fenster)
+### M2 — Mehr Spiel ✅
+- [x] 6 Level + Level-Auswahl mit Fortschritt; 5 Themes (Gras/Sonnenuntergang/
+      Nacht/Eis/Höhle) mit eigenen FLUX-Kulissen und Musik
+- [x] Power-Up-Zustände (klein/groß; Treffer verkleinert statt Leben zu kosten)
+- [x] 2 neue Gegnertypen: Flieger (Sinus-Flug) und Stachler (nicht stampfbar)
+- [x] Bewegliche Plattformen (mit Mitnahme), Sprungfedern, Checkpoints
+- [x] Partikel & „Juice": Funken/Staub/Poof/Sparkle, schwebende Punkte,
+      Screen-Shake, Squash/Stretch
+- [x] Pause-Menü mit Lautstärke, Neustart, Level-Auswahl
 
 ### M3 — Ausbau
 - [ ] Level-Editor bzw. **Tiled**-Import (TMX)

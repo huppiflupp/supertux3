@@ -64,3 +64,8 @@ class AudioManager:
         self.muted = not self.muted
         if self.ok:
             pygame.mixer.music.set_volume(0.0 if self.muted else self.music_volume)
+
+    def change_music_volume(self, delta: float) -> None:
+        self.music_volume = max(0.0, min(1.0, self.music_volume + delta))
+        if self.ok and not self.muted:
+            pygame.mixer.music.set_volume(self.music_volume)

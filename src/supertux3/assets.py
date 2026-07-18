@@ -1,8 +1,7 @@
-"""Zentrales Laden aller Grafiken (Kachelsatz, Sprites, Props, Hintergrund).
+"""Zentrales Laden aller Grafiken (Kachelsatz, Sprites, Props, Items).
 
 Die Frame-Maße hier müssen zum Pixel-Art-Generator
-(tools/asset_pipeline/gen_pixelart.py) passen. Beide Seiten teilen sich die
-folgende Spezifikation.
+(tools/asset_pipeline/gen_pixelart.py) passen.
 """
 from __future__ import annotations
 
@@ -13,61 +12,76 @@ from .engine.spritesheet import load_image, slice_strip, slice_grid
 
 # --- geteilte Sprite-Spezifikation (HD, 32px-Kacheln) -------------------
 PENGU_FW, PENGU_FH = 40, 48
-# Reihenfolge der Frames im Streifen characters/pengu.png
+PENGU_BIG_FW, PENGU_BIG_FH = 60, 72
 PENGU_LAYOUT = ["idle0", "idle1", "walk0", "walk1", "walk2", "walk3", "jump", "fall", "duck"]
 COIN_FW, COIN_FH = 24, 24
-COIN_FRAMES = 6
 SNOWBALL_FW, SNOWBALL_FH = 36, 32
 SNOWBALL_LAYOUT = ["walk0", "walk1", "flat"]
+FLYER_FW, FLYER_FH = 40, 28
+SPIKY_FW, SPIKY_FH = 36, 34
+SPRING_FW, SPRING_FH = 32, 24
+CHECKPOINT_FW, CHECKPOINT_FH = 32, 64
+
+
+def _named(frames, layout):
+    return {n: frames[i] for i, n in enumerate(layout) if i < len(frames)}
 
 
 class Assets:
     def __init__(self) -> None:
         self.tileset: list[pygame.Surface] = []
         self.player: dict[str, list[pygame.Surface]] = {}
+        self.player_big: dict[str, list[pygame.Surface]] = {}
         self.coin: list[pygame.Surface] = []
         self.snowball: dict[str, list[pygame.Surface]] = {}
+        self.flyer: list[pygame.Surface] = []
+        self.spiky: list[pygame.Surface] = []
         self.props: dict[str, pygame.Surface] = {}
-        self.background: pygame.Surface | None = None
-        self.hills: pygame.Surface | None = None
+        self.item_grow: pygame.Surface | None = None
+        self.spring: list[pygame.Surface] = []
+        self.checkpoint: list[pygame.Surface] = []
 
-    def load(self) -> None:
-        # Kachelsatz (eine Reihe 16x16-Kacheln)
-        ts = load_image(IMAGE_DIR / "tiles" / "tileset.png")
-        self.tileset = slice_grid(ts, TILE)
-
-        # Spieler
-        sheet = load_image(IMAGE_DIR / "characters" / "pengu.png")
-        frames = slice_strip(sheet, PENGU_FW, PENGU_FH)
-        named = {name: frames[i] for i, name in enumerate(PENGU_LAYOUT) if i < len(frames)}
-        self.player = {
+    def _pengu(self, path, fw, fh):
+        frames = slice_strip(load_image(path), fw, fh)
+        named = _named(frames, PENGU_LAYOUT)
+        d = {
             "idle": [named.get("idle0"), named.get("idle1")],
             "walk": [named.get("walk0"), named.get("walk1"), named.get("walk2"), named.get("walk3")],
             "jump": [named.get("jump")],
             "fall": [named.get("fall")],
             "duck": [named.get("duck")],
         }
-        self.player = {k: [f for f in v if f is not None] or [frames[0]] for k, v in self.player.items()}
+        return {k: [f for f in v if f is not None] or [frames[0]] for k, v in d.items()}
 
-        # Münze
-        coin_sheet = load_image(IMAGE_DIR / "collectibles" / "coin.png")
-        self.coin = slice_strip(coin_sheet, COIN_FW, COIN_FH) or [coin_sheet]
+    def load(self) -> None:
+        self.tileset = slice_grid(load_image(IMAGE_DIR / "tiles" / "tileset.png"), TILE)
 
-        # Gegner (Schneeball)
-        sb = load_image(IMAGE_DIR / "enemies" / "snowball.png")
-        sb_frames = slice_strip(sb, SNOWBALL_FW, SNOWBALL_FH)
-        sbn = {name: sb_frames[i] for i, name in enumerate(SNOWBALL_LAYOUT) if i < len(sb_frames)}
+        self.player = self._pengu(IMAGE_DIR / "characters" / "pengu.png", PENGU_FW, PENGU_FH)
+        self.player_big = self._pengu(IMAGE_DIR / "characters" / "pengu_big.png",
+                                      PENGU_BIG_FW, PENGU_BIG_FH)
+
+        self.coin = slice_strip(load_image(IMAGE_DIR / "collectibles" / "coin.png"), COIN_FW, COIN_FH)
+
+        sb = slice_strip(load_image(IMAGE_DIR / "enemies" / "snowball.png"), SNOWBALL_FW, SNOWBALL_FH)
+        sbn = _named(sb, SNOWBALL_LAYOUT)
         self.snowball = {
-            "walk": [sbn.get("walk0", sb_frames[0]), sbn.get("walk1", sb_frames[0])],
-            "flat": [sbn.get("flat", sb_frames[-1])],
+            "walk": [sbn.get("walk0", sb[0]), sbn.get("walk1", sb[0])],
+            "flat": [sbn.get("flat", sb[-1])],
         }
+        self.flyer = slice_strip(load_image(IMAGE_DIR / "enemies" / "flyer.png"), FLYER_FW, FLYER_FH)
+        self.spiky = slice_strip(load_image(IMAGE_DIR / "enemies" / "spiky.png"), SPIKY_FW, SPIKY_FH)
 
-        # Props (rein dekorativ)
         for name in ("bush", "cloud", "tree", "flag"):
             self.props[name] = load_image(IMAGE_DIR / "props" / f"{name}.png")
 
-        # Hintergrund (kann von der ComfyUI/FLUX-Pipeline stammen)
-        bg = IMAGE_DIR / "background" / "sky_parallax.png"
-        self.background = load_image(bg) if bg.exists() else None
-        hills = IMAGE_DIR / "background" / "hills_midground.png"
-        self.hills = load_image(hills) if hills.exists() else None
+        self.item_grow = load_image(IMAGE_DIR / "collectibles" / "grow.png")
+        self.spring = slice_strip(load_image(IMAGE_DIR / "props" / "spring.png"), SPRING_FW, SPRING_FH)
+        self.checkpoint = slice_strip(load_image(IMAGE_DIR / "props" / "checkpoint.png"),
+                                      CHECKPOINT_FW, CHECKPOINT_FH)
+
+    # Hintergrund je Level (Dateiname) laden – oder None
+    def background(self, name: str | None) -> pygame.Surface | None:
+        if not name:
+            return None
+        path = IMAGE_DIR / "background" / name
+        return load_image(path) if path.exists() else None

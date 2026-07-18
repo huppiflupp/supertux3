@@ -28,6 +28,25 @@ class Coin(Entity):
         surface.blit(self.spin.image, (round(self.x) - ox, round(self.y) - oy))
 
 
+class GrowItem(Entity):
+    """Schwebendes Wachstums-Item: macht kleinen Pengu groß."""
+
+    def __init__(self, x: float, y: float, assets):
+        img = assets.item_grow
+        super().__init__(x, y, img.get_width(), img.get_height())
+        self.img = img
+        self.base_y = float(y)
+        self.t = (x * 0.11) % (math.pi * 2)
+
+    def update(self, dt: float, level) -> None:
+        self.t += dt * 2.5
+        self.y = self.base_y + math.sin(self.t) * 4.0
+
+    def draw(self, surface: pygame.Surface, camera) -> None:
+        ox, oy = camera.offset
+        surface.blit(self.img, (round(self.x) - ox, round(self.y) - oy))
+
+
 class Goal(Entity):
     """Zielfahne am Levelende."""
 

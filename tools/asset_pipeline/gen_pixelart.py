@@ -129,6 +129,7 @@ def draw_pengu(lf=0.0, rf=0.0, llift=0.0, rlift=0.0, arms_up=False,
     p.ellipse([11, top + 13, 30, bot - 1], fill=BELLY)
     p.ellipse([11.5, top + 15, 20, bot - 2], fill=BELLY_SH)   # linker Schatten
     p.ellipse([13.5, top + 14, 30, bot - 1], fill=BELLY)      # rechts wieder hell
+    p.ellipse([18, top + 16, 25, top + 30], fill=(255, 255, 255, 255))  # mittiger Glanz
 
     # Augen (Blick leicht nach vorn/rechts)
     ey = top + 8
@@ -141,6 +142,13 @@ def draw_pengu(lf=0.0, rf=0.0, llift=0.0, rlift=0.0, arms_up=False,
             p.ellipse([ex - 3, ey - 3.5, ex + 3, ey + 3.5], outline=(120, 130, 150, 255))
             p.ellipse([ex - .5, ey - 1.5, ex + 2.5, ey + 2.5], fill=PUP)
             p.ellipse([ex + .3, ey - 1, ex + 1.6, ey + .3], fill=WHITE)
+    if not blink:
+        # Augenbrauen (freundlich)
+        p.line([(14.5, ey - 4.5), (19, ey - 3.5)], width=.9, fill=(28, 30, 42, 255))
+        p.line([(23, ey - 3.5), (27.5, ey - 4.5)], width=.9, fill=(28, 30, 42, 255))
+    # Wangen
+    p.ellipse([12.5, ey + 3.5, 16, ey + 6], fill=(255, 150, 160, 120))
+    p.ellipse([26, ey + 3.5, 29.5, ey + 6], fill=(255, 150, 160, 120))
 
     # Schnabel
     by = top + 12
@@ -168,8 +176,8 @@ def draw_pengu(lf=0.0, rf=0.0, llift=0.0, rlift=0.0, arms_up=False,
     return p.result()
 
 
-def gen_pengu():
-    frames = [
+def _pengu_frames():
+    return [
         draw_pengu(),                                  # idle0
         draw_pengu(blink=True, breathe=1),             # idle1
         draw_pengu(lf=-2, llift=3, rf=2),              # walk0
@@ -180,7 +188,15 @@ def gen_pengu():
         draw_pengu(lf=-3, rf=3),                       # fall
         draw_pengu(squash=8),                          # duck
     ]
-    _save(_sheet(frames, 40, 48), "characters", "pengu.png")
+
+
+def gen_pengu():
+    _save(_sheet(_pengu_frames(), 40, 48), "characters", "pengu.png")
+
+
+def gen_pengu_big():
+    frames = [f.resize((60, 72), Image.LANCZOS) for f in _pengu_frames()]
+    _save(_sheet(frames, 60, 72), "characters", "pengu_big.png")
 
 
 # =========================================================================
@@ -387,12 +403,137 @@ def gen_props():
     _save(p.result(), "props", "flag.png")
 
 
+# =========================================================================
+#  Flieger (40x28, 2 Frames)
+# =========================================================================
+def draw_flyer(wing_up: bool) -> Image.Image:
+    p = Pen(40, 28)
+    PURP = (150, 120, 214, 255)
+    PURP_LO = (112, 86, 176, 255)
+    wy = 6 if wing_up else 14
+    for sx, sgn in ((6, -1), (34, 1)):
+        p.poly([(20 + sgn * 4, 14), (sx, wy), (sx + sgn * 2, wy + 8)], fill=PURP_LO)
+    p.ellipse([11, 7, 29, 25], fill=OUT)
+    p.ellipse([12, 8, 28, 24], fill=PURP)
+    p.ellipse([13, 9, 25, 17], fill=(180, 156, 232, 255))
+    for ex in (17, 23):
+        p.ellipse([ex - 2, 13, ex + 2, 18], fill=WHITE, outline=(120, 100, 160, 255))
+        p.ellipse([ex - .6, 14.5, ex + 1.6, 17.5], fill=PUP)
+    p.arc([17, 18, 23, 22], 10, 170, width=1.1, fill=PUP)
+    return p.result()
+
+
+def gen_flyer():
+    _save(_sheet([draw_flyer(True), draw_flyer(False)], 40, 28), "enemies", "flyer.png")
+
+
+# =========================================================================
+#  Stachler (36x34, 2 Frames) – nicht stampfbar
+# =========================================================================
+def draw_spiky(step: int) -> Image.Image:
+    p = Pen(36, 34)
+    RED = (206, 78, 54, 255)
+    RED_LO = (158, 52, 38, 255)
+    # Stacheln oben
+    for x in range(6, 32, 5):
+        p.poly([(x, 14), (x + 2.5, 2), (x + 5, 14)], fill=(230, 226, 214, 255))
+        p.poly([(x + 2.5, 6), (x + 2.5, 2), (x + 5, 14)], fill=(190, 186, 176, 255))
+    p.ellipse([5, 10, 31, 31], fill=OUT)
+    p.ellipse([6, 11, 30, 30], fill=RED)
+    p.ellipse([7, 20, 29, 30], fill=RED_LO)
+    p.ellipse([9, 13, 20, 21], fill=(232, 120, 96, 255))
+    for ex in (14, 22):
+        p.ellipse([ex - 2.4, 17, ex + 2.4, 23], fill=WHITE)
+        p.ellipse([ex - .6, 19, ex + 1.8, 22.5], fill=PUP)
+    # finstere Brauen
+    p.line([(11, 15.5), (16, 17.5)], width=1.1, fill=(40, 20, 16, 255))
+    p.line([(25, 15.5), (20, 17.5)], width=1.1, fill=(40, 20, 16, 255))
+    p.arc([15, 24, 21, 28], 190, 350, width=1.1, fill=(60, 24, 18, 255))
+    fo = 2 if step == 0 else -2
+    for cx in (12, 24):
+        off = fo if cx == 24 else -fo
+        p.ellipse([cx - 4 + off, 29, cx + 4 + off, 34], fill=FOOT)
+        p.ellipse([cx - 4 + off, 31, cx + 4 + off, 34], fill=FOOT_LO)
+    return p.result()
+
+
+def gen_spiky():
+    _save(_sheet([draw_spiky(0), draw_spiky(1)], 36, 34), "enemies", "spiky.png")
+
+
+# =========================================================================
+#  Sprungfeder (32x24, 2 Frames)
+# =========================================================================
+def draw_spring(compressed: bool) -> Image.Image:
+    p = Pen(32, 24)
+    top = 12 if compressed else 4
+    MET = (200, 60, 70, 255)
+    MET_HI = (240, 130, 140, 255)
+    p.rounded([3, 21, 29, 24], 1.5, fill=(90, 94, 104, 255))       # Basis
+    # Spirale
+    for i in range(3):
+        y = top + 3 + i * ((20 - top) / 3)
+        p.rounded([5, y, 27, y + 2.5], 2, fill=MET, outline=(150, 40, 50, 255))
+    p.rounded([2, top, 30, top + 5], 2, fill=(150, 156, 168, 255))  # Platte
+    p.rounded([3, top + 1, 29, top + 2.5], 2, fill=(210, 216, 228, 255))
+    return p.result()
+
+
+def gen_spring():
+    _save(_sheet([draw_spring(False), draw_spring(True)], 32, 24), "props", "spring.png")
+
+
+# =========================================================================
+#  Checkpoint (32x64, 2 Frames: aus / an)
+# =========================================================================
+def draw_checkpoint(active: bool) -> Image.Image:
+    p = Pen(32, 64)
+    p.rounded([6, 2, 10, 60], 2, fill=(150, 154, 164, 255))
+    p.line([(7.5, 4), (7.5, 58)], width=1, fill=(210, 214, 224, 255))
+    p.ellipse([3, 58, 20, 64], fill=(120, 124, 134, 255))
+    if active:
+        p.poly([(10, 6), (30, 12), (10, 20)], fill=(90, 210, 110, 255))
+        p.poly([(10, 13), (30, 12), (10, 20)], fill=(60, 176, 84, 255))
+        p.ellipse([5, 4, 12, 11], fill=(160, 255, 180, 200))   # Leuchten
+    else:
+        p.poly([(10, 30), (24, 34), (10, 42)], fill=(150, 156, 168, 255))
+        p.poly([(10, 36), (24, 34), (10, 42)], fill=(120, 126, 138, 255))
+    return p.result()
+
+
+def gen_checkpoint():
+    _save(_sheet([draw_checkpoint(False), draw_checkpoint(True)], 32, 64), "props", "checkpoint.png")
+
+
+# =========================================================================
+#  Wachstums-Item (28x28) – leuchtendes Ei
+# =========================================================================
+def gen_grow():
+    p = Pen(28, 28)
+    p.ellipse([4, 2, 24, 26], fill=OUT)
+    p.ellipse([5, 3, 23, 25], fill=(255, 244, 214, 255))
+    p.ellipse([6, 4, 20, 16], fill=WHITE)
+    for cx, cy, r in [(9, 17, 2.4), (16, 20, 2), (18, 11, 1.8), (12, 12, 1.6)]:
+        p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 176, 60, 255))
+    # kleiner Stern
+    p.poly([(14, 6), (15.4, 9.4), (18.8, 9.4), (16, 11.6),
+            (17, 15), (14, 13), (11, 15), (12, 11.6),
+            (9.2, 9.4), (12.6, 9.4)], fill=(255, 120, 90, 255))
+    _save(p.result(), "collectibles", "grow.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_tileset()
     gen_pengu()
+    gen_pengu_big()
     gen_coin()
     gen_snowball()
+    gen_flyer()
+    gen_spiky()
+    gen_spring()
+    gen_checkpoint()
+    gen_grow()
     gen_props()
     print("Fertig.")
 

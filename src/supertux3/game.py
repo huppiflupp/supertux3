@@ -47,6 +47,8 @@ class Game:
         self._load_audio()
 
         self.lives = START_LIVES
+        self.level_index = 0
+        self.unlocked = 0          # höchster freigeschalteter Level-Index
         self.running = True
         self.scenes = SceneManager(self)
 
@@ -54,7 +56,7 @@ class Game:
         self.scenes.switch(MenuScene(self))
 
     def _load_audio(self) -> None:
-        for name in ("jump", "coin", "stomp", "hurt", "win"):
+        for name in ("jump", "coin", "stomp", "hurt", "win", "spring", "grow", "checkpoint"):
             self.audio.load_sfx(name, f"{name}.wav")
 
     def _toggle_fullscreen(self) -> None:

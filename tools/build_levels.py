@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""Baut levels/level1..6.json deterministisch auf.
+
+Boden: Reihe 15 (Gras) / 16 (Erde). Etwas 'auf dem Boden' -> ty=14.
+Sprunghöhe ~3.7 Kacheln, Weite ~5 Kacheln -> Abgründe <=4 Kacheln sind fair;
+größere Lücken werden mit beweglichen Plattformen überbrückt.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+H = 17
+GROUND = 15
+FLOOR = 14
+
+
+class B:
+    def __init__(self, w):
+        self.w = w
+        self.g = [["." for _ in range(w)] for _ in range(H)]
+        self.ent = []
+        self.props = []
+
+    def put(self, x, y, ch):
+        if 0 <= y < H and 0 <= x < self.w:
+            self.g[y][x] = ch
+
+    def ground(self, x0, x1, ch="G", fill="D"):
+        for x in range(x0, x1 + 1):
+            self.put(x, GROUND, ch)
+            self.put(x, GROUND + 1, fill)
+
+    def plat(self, x0, x1, y, ch="B"):
+        for x in range(x0, x1 + 1):
+            self.put(x, y, ch)
+
+    def stair(self, x0, height, ch="D", top="G"):
+        for i in range(height):
+            for y in range(GROUND - i, GROUND + 2):
+                self.put(x0 + i, y, ch)
+            self.put(x0 + i, GROUND - i, top)
+
+    def coins(self, x0, x1, y):
+        for x in range(x0, x1 + 1):
+            self.ent.append(["coin", x, y])
+
+    def arc(self, cx, y):
+        self.ent += [["coin", cx - 1, y], ["coin", cx, y - 1], ["coin", cx + 1, y]]
+
+    def e(self, *a):
+        self.ent.append(list(a))
+
+    def prop(self, name, x, y=FLOOR):
+        self.props.append([name, x, y])
+
+    def dump(self, path, name, theme, spawn=(2, FLOOR), bg=None, music=None):
+        data = {"name": name, "theme": theme, "spawn": list(spawn),
+                "solid": ["".join(r) for r in self.g],
+                "props": self.props, "entities": self.ent}
+        if bg:
+            data["background"] = bg
+        if music:
+            data["music"] = music
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=0)
+        print(f"  {path.name}: {name} ({self.w}x{H}, {len(self.ent)} ent, {len(self.props)} props)")
+
+
+LV = ROOT / "levels"
+LV.mkdir(exist_ok=True)
+
+
+# --- Level 1: sanfter Einstieg ------------------------------------------
+def level1():
+    b = B(150)
+    pits = [(31, 34), (63, 66), (98, 101)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1); x = c + 1
+    b.ground(x, 149)
+    for x0, x1, y in [(18, 22, 11), (26, 28, 9), (44, 49, 10), (72, 77, 11), (110, 114, 10)]:
+        b.plat(x0, x1, y)
+    b.stair(128, 4); b.plat(132, 149, GROUND - 4)
+    b.coins(6, 9, 12); b.arc(32, 12); b.coins(19, 21, 9); b.arc(64, 12)
+    b.coins(45, 48, 8); b.arc(99, 12); b.coins(72, 76, 9); b.coins(133, 138, GROUND - 5)
+    b.e("growth", 27, 8); b.e("spring", 88, FLOOR)
+    for ex in (14, 40, 58, 82, 106, 138):
+        b.e("snowball", ex, FLOOR)
+    b.e("checkpoint", 70, FLOOR); b.e("goal", 146, GROUND - 4)
+    for t in (5, 24, 52, 90, 125):
+        b.prop("bush", t)
+    for t in (10, 48, 108):
+        b.prop("tree", t)
+    for t, y in [(12, 2), (30, 1), (75, 2), (120, 2)]:
+        b.prop("cloud", t, y)
+    b.dump(LV / "level1.json", "Grüne Hügel 1", "grass")
+
+
+# --- Level 2: Federn & Plattformen (Sonnenuntergang) --------------------
+def level2():
+    b = B(160)
+    pits = [(24, 28), (46, 52), (74, 79), (104, 110), (132, 137)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1); x = c + 1
+    b.ground(x, 159)
+    b.e("mplat", 46, 11, 52, 11, 3); b.e("mplat", 104, 12, 110, 8, 3)
+    b.plat(60, 64, 9); b.plat(86, 90, 10); b.plat(118, 122, 9)
+    b.e("spring", 22, FLOOR); b.e("spring", 72, FLOOR); b.e("spring", 130, FLOOR)
+    b.arc(26, 8); b.arc(49, 9); b.arc(76, 8); b.arc(107, 10); b.arc(134, 8)
+    b.coins(60, 64, 8); b.coins(86, 90, 9); b.coins(118, 122, 8)
+    b.e("growth", 62, 8)
+    for ex in (16, 40, 66, 96, 124, 150):
+        b.e("snowball", ex, FLOOR)
+    b.e("flyer", 55, 8, 5); b.e("flyer", 115, 7, 5)
+    b.e("checkpoint", 80, FLOOR); b.e("goal", 156, FLOOR)
+    for t in (8, 35, 92, 145):
+        b.prop("bush", t)
+    for t in (18, 100):
+        b.prop("tree", t)
+    b.dump(LV / "level2.json", "Sonnige Hänge", "sunset")
+
+
+# --- Level 3: Wolkensprung – viele bewegliche Plattformen ---------------
+def level3():
+    b = B(170)
+    b.ground(0, 12)
+    b.ground(20, 30); b.ground(40, 52); b.ground(70, 84)
+    b.ground(104, 120); b.ground(150, 169)
+    b.e("mplat", 13, 12, 19, 12, 3)
+    b.e("mplat", 31, 12, 39, 9, 3)
+    b.e("mplat", 53, 11, 69, 11, 3)
+    b.e("mplat", 85, 10, 103, 13, 3)
+    b.e("mplat", 121, 12, 149, 12, 4)
+    for cx in (16, 35, 60, 94, 135):
+        b.arc(cx, 9)
+    b.coins(22, 28, 12); b.coins(42, 50, 12); b.coins(72, 82, 12); b.coins(106, 118, 12)
+    b.e("growth", 46, 12)
+    for ex in (24, 46, 76, 110, 158):
+        b.e("snowball", ex, FLOOR)
+    b.e("flyer", 35, 7, 6); b.e("flyer", 90, 6, 8); b.e("flyer", 135, 8, 6)
+    b.e("spring", 10, FLOOR); b.e("spring", 160, FLOOR)
+    b.e("checkpoint", 78, FLOOR); b.e("goal", 166, FLOOR)
+    for t, y in [(10, 1), (44, 2), (90, 1), (130, 2)]:
+        b.prop("cloud", t, y)
+    b.dump(LV / "level3.json", "Wolkensprung", "grass")
+
+
+# --- Level 4: Eishöhle – Stachler & Eis ---------------------------------
+def level4():
+    b = B(160)
+    pits = [(30, 34), (58, 62), (92, 97), (124, 129)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="I", fill="I"); x = c + 1
+    b.ground(x, 159, ch="I", fill="I")
+    for x0, x1, y in [(18, 24, 11), (44, 50, 10), (74, 80, 11), (108, 114, 10)]:
+        b.plat(x0, x1, y, "I")
+    b.e("mplat", 58, 12, 62, 12, 3); b.e("mplat", 124, 11, 129, 11, 3)
+    b.arc(32, 12); b.arc(60, 12); b.arc(94, 12); b.arc(126, 12)
+    b.coins(18, 24, 9); b.coins(74, 80, 9); b.coins(108, 114, 8)
+    b.e("growth", 46, 8)
+    for ex in (16, 46, 78, 112, 148):
+        b.e("spiky", ex, FLOOR)
+    for ex in (40, 100):
+        b.e("snowball", ex, FLOOR)
+    b.e("spring", 88, FLOOR)
+    b.e("checkpoint", 70, FLOOR); b.e("goal", 156, FLOOR)
+    b.dump(LV / "level4.json", "Eishöhle", "ice")
+
+
+# --- Level 5: Nacht am Hügel – Mix --------------------------------------
+def level5():
+    b = B(165)
+    pits = [(26, 30), (52, 57), (84, 89), (116, 121), (140, 145)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1); x = c + 1
+    b.ground(x, 164)
+    for x0, x1, y in [(20, 24, 10), (64, 70, 9), (98, 104, 10), (128, 134, 9)]:
+        b.plat(x0, x1, y)
+    b.e("mplat", 52, 11, 57, 8, 3); b.e("mplat", 116, 12, 121, 12, 3)
+    b.e("spring", 24, FLOOR); b.e("spring", 82, FLOOR); b.e("spring", 138, FLOOR)
+    b.arc(28, 8); b.arc(54, 9); b.arc(86, 8); b.arc(118, 9); b.arc(142, 8)
+    b.coins(64, 70, 8); b.coins(98, 104, 9); b.coins(128, 134, 8)
+    b.e("growth", 66, 7)
+    for ex in (16, 44, 74, 108, 150):
+        b.e("snowball", ex, FLOOR)
+    for ex in (38, 96, 132):
+        b.e("spiky", ex, FLOOR)
+    b.e("flyer", 60, 7, 6); b.e("flyer", 124, 6, 7)
+    b.e("checkpoint", 90, FLOOR); b.e("goal", 161, FLOOR)
+    for t in (12, 100):
+        b.prop("tree", t)
+    for t, y in [(20, 2), (70, 1), (130, 2)]:
+        b.prop("cloud", t, y)
+    b.dump(LV / "level5.json", "Nacht am Hügel", "night")
+
+
+# --- Level 6: Kristallhöhle – Finale ------------------------------------
+def level6():
+    b = B(185)
+    pits = [(22, 26), (40, 45), (62, 68), (88, 94), (112, 118), (140, 146), (160, 165)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="S", fill="S"); x = c + 1
+    b.ground(x, 184, ch="S", fill="S")
+    for x0, x1, y in [(32, 36, 10), (74, 80, 9), (100, 106, 11), (128, 134, 9)]:
+        b.plat(x0, x1, y, "S")
+    b.e("mplat", 40, 12, 45, 9, 3)
+    b.e("mplat", 62, 11, 68, 11, 3)
+    b.e("mplat", 112, 10, 118, 13, 3)
+    b.e("mplat", 160, 12, 165, 12, 4)
+    b.e("spring", 20, FLOOR); b.e("spring", 86, FLOOR); b.e("spring", 138, FLOOR)
+    for cx in (24, 42, 64, 90, 114, 142, 162):
+        b.arc(cx, 9)
+    b.coins(74, 80, 8); b.coins(100, 106, 10); b.coins(128, 134, 8)
+    b.e("growth", 34, 8); b.e("growth", 130, 7)
+    for ex in (16, 52, 96, 150, 178):
+        b.e("snowball", ex, FLOOR)
+    for ex in (34, 78, 104, 132, 172):
+        b.e("spiky", ex, FLOOR)
+    b.e("flyer", 48, 7, 6); b.e("flyer", 108, 6, 7); b.e("flyer", 156, 7, 6)
+    b.e("checkpoint", 70, FLOOR); b.e("checkpoint", 130, FLOOR)
+    b.e("goal", 181, FLOOR)
+    b.dump(LV / "level6.json", "Kristallhöhle", "cave")
+
+
+def main():
+    print("Baue Level ->", LV)
+    for fn in (level1, level2, level3, level4, level5, level6):
+        fn()
+    print("Fertig.")
+
+
+if __name__ == "__main__":
+    main()

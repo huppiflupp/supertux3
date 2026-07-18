@@ -63,38 +63,54 @@ supertux3/
 │   ├── assets.py              # zentrales Laden aller Grafiken (+ Frame-Spezifikation!)
 │   ├── engine/
 │   │   ├── scene.py           # Scene-Basisklasse + SceneManager
-│   │   ├── camera.py          # weiche, begrenzte Kamera
+│   │   ├── camera.py          # weiche, begrenzte Kamera + Screen-Shake
 │   │   ├── animation.py       # Frame-Animation
+│   │   ├── particles.py       # Partikelsystem + schwebende Texte (Juice)
 │   │   ├── spritesheet.py     # Bild laden + Streifen/Grid schneiden (fehlertolerant)
-│   │   └── audio.py           # Musik + SFX (fehlertolerant, stumm ohne Gerät)
+│   │   └── audio.py           # Musik + SFX (fehlertolerant, Lautstärke/Mute)
 │   ├── world/
 │   │   ├── tilemap.py         # Kachelgitter: Kollision + Darstellung
-│   │   └── level.py           # Levelformat laden -> Welt aufbauen
+│   │   └── level.py           # Levelformat + Themes -> Welt aufbauen
 │   ├── entities/
-│   │   ├── entity.py          # Basis: Physik + Kachelkollision
-│   │   ├── player.py          # "Pengu" (Coyote-Time, Jump-Buffer, variabler Sprung)
-│   │   ├── enemy.py           # "Schneeball" (läuft, dreht um, stampfbar)
-│   │   └── collectible.py     # Münze, Zielfahne
+│   │   ├── entity.py          # Basis: Physik + Kachel-/Plattform-Kollision
+│   │   ├── player.py          # "Pengu" klein/groß, Squash/Stretch, Power-Up
+│   │   ├── enemy.py           # Schneeball / Stachler (nicht stampfbar) / Flieger
+│   │   ├── platform.py        # MovingPlatform (mit Mitnahme), Spring, Checkpoint
+│   │   └── collectible.py     # Münze, Wachstums-Item, Zielfahne
 │   └── scenes/
 │       ├── menu.py            # Titelmenü (nutzt title_art.png)
-│       ├── play.py            # Gameplay (Kollisionen, Parallax, HUD)
-│       └── gameover.py        # Ergebnis-Szene (gewonnen/verloren)
+│       ├── levelselect.py     # Level-Auswahl (Fortschritt via game.unlocked)
+│       ├── play.py            # Gameplay (Effekte, Power-Up, Pause, Progression)
+│       └── gameover.py        # Ergebnis-Szene (Level/Spiel geschafft / Game Over)
 ├── assets/
 │   ├── images/{characters,enemies,collectibles,tiles,props,background,ui}/
 │   ├── audio/{music,sfx}/
 │   └── fonts/
-├── levels/level1.json         # erstes Level (per tools/build_level1.py erzeugt)
+├── levels/level1..6.json      # 6 Level (per tools/build_levels.py erzeugt)
 ├── tools/
 │   ├── asset_pipeline/
-│   │   ├── gen_pixelart.py     # Sprites/Kacheln/Props (PIL)
-│   │   ├── gen_audio.py        # Musik + SFX (numpy)
+│   │   ├── gen_pixelart.py     # HD-Sprites/Kacheln/Props (PIL, supersampled)
+│   │   ├── gen_audio.py        # Musik (level1/2/ice/title) + SFX (numpy)
 │   │   └── comfy_gen.py        # FLUX-Hintergründe via ComfyUI-API (stdlib)
-│   └── build_level1.py         # baut levels/level1.json deterministisch
+│   └── build_levels.py         # baut levels/level1..6.json deterministisch
 ├── docs/
 │   ├── PLAN.md                 # Fahrplan / Vision / Roadmap
 │   └── asset_pipeline.md       # ComfyUI/FLUX-Setup & Nutzung
 └── tests/test_smoke.py
 ```
+
+### Mechaniken (M2)
+- **Power-Up klein/groß**: Wachstums-Item macht Pengu groß; Treffer verkleinert
+  statt sofort Leben zu kosten (`Player.take_hit()` → `die`/`shrink`/`none`).
+- **Gegner**: Schneeball (stampfbar), Flieger (Sinus-Flug, stampfbar), Stachler
+  (`stompable=False` → Kontakt verletzt immer).
+- **Plattformen/Federn/Checkpoints**: bewegliche Plattformen tragen den Spieler
+  (Ride-Logik in `play.py::_recompute_ride`), Federn katapultieren, Checkpoints
+  verschieben den Respawn-Punkt.
+- **Juice**: `engine/particles.py` (Münz-Funken, Stampf-Staub, Sprung/Landung,
+  Tod-Poof, Sparkle, schwebende Punkte) + Kamera-Shake + Squash/Stretch.
+- **Progression**: `settings.LEVEL_FILES`, `game.unlocked`; Ziel → nächstes Level.
+- **Pause** (P/ESC) mit Lautstärke (`+`/`-`), Neustart (R), Level-Auswahl (Q).
 
 ---
 
@@ -139,6 +155,11 @@ Alle Assets sind **reproduzierbar** — nichts ist „von Hand gemalt".
       --prompt "cheerful 16-bit platformer sky, soft clouds, green hills, no text" \
       --out sky_parallax.png --width 1536 --height 768
   ```
+  Vorhandene Kulissen: `sky_parallax`, `sunset_hills`, `night_hills`,
+  `ice_mountains`, `cave` (+ `title_art`). Level-Theme → Hintergrund/Musik in
+  `world/level.py::THEMES`.
+  **Wichtig:** ComfyUI nach dem Generieren beenden, damit die GPU (RTX 5080)
+  wieder frei ist: `pkill -f "main.py --listen"`.
 
 ---
 

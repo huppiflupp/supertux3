@@ -214,13 +214,77 @@ def sfx_win() -> np.ndarray:
     return render_track(seq, 140, "square", vol=0.4)
 
 
+def sfx_spring() -> np.ndarray:
+    n = int(0.22 * SR)
+    t = np.arange(n) / SR
+    f = 260 + 520 * np.clip(t * 6, 0, 1) + 40 * np.sin(2 * np.pi * 18 * t)
+    ph = np.cumsum(2 * np.pi * f / SR)
+    return np.sign(np.sin(ph)) * np.exp(-t * 5) * 0.4
+
+
+def sfx_grow() -> np.ndarray:
+    seq = [("C5", .08), ("E5", .08), ("G5", .08), ("C6", .1), ("E6", .18)]
+    return render_track(seq, 168, "square", duty=0.5, vol=0.38)
+
+
+def sfx_checkpoint() -> np.ndarray:
+    a = osc(freq("G5"), int(0.12 * SR), "sine") * envelope(int(0.12 * SR), r=0.1)
+    b = osc(freq("C6"), int(0.30 * SR), "sine") * envelope(int(0.30 * SR), r=0.2)
+    return np.concatenate([a, b]) * 0.45
+
+
+# --- weitere Musik -------------------------------------------------------
+def level2_music() -> np.ndarray:
+    bpm = 156
+    A = [("A4", .5), ("C5", .5), ("E5", .5), ("A5", .5),
+         ("G5", .5), ("E5", .5), ("C5", .5), ("D5", .5),
+         ("F5", .5), ("A5", .5), ("G5", .5), ("E5", .5),
+         ("D5", .5), ("B4", .5), ("C5", 1.0)]
+    B = [("E5", .5), ("A5", .5), ("G5", .5), ("F5", .5),
+         ("E5", .5), ("D5", .5), ("C5", .5), ("B4", .5),
+         ("A4", .5), ("C5", .5), ("E5", .5), ("D5", .5),
+         ("C5", .5), ("E5", .5), ("A5", 1.0)]
+    melody = A + B + A + B
+    lead = render_track(melody, bpm, "square", duty=0.35, vol=0.22)
+    roots = ["A2", "F2", "C3", "G2", "D3", "B2", "F2", "E3"]
+    bass_notes = []
+    for r in (roots * 2):
+        bass_notes += [(r, .5)] * 4
+    bass = render_track(bass_notes, bpm, "triangle", vol=0.30)
+    beats = sum(b for _, b in melody)
+    kick_notes = []
+    for _ in range(int(beats)):
+        kick_notes += [("C2", .5), ("r", .5)]
+    kick = render_track(kick_notes, bpm, "sine", vol=0.32)
+    hats = render_track([("A6", .25)] * int(beats * 4), bpm, "noise", vol=0.05)
+    return mix(lead, bass, kick, hats)
+
+
+def ice_music() -> np.ndarray:
+    bpm = 116
+    melody = [("E5", 1), ("G5", 1), ("B5", 1), ("A5", 1),
+              ("G5", 1.5), ("E5", .5), ("D5", 2),
+              ("C5", 1), ("E5", 1), ("G5", 1), ("F5", 1),
+              ("E5", 1.5), ("D5", .5), ("C5", 2)]
+    lead = render_track(melody, bpm, "triangle", vol=0.26)
+    lead = np.concatenate([lead, lead])
+    bell = render_track([("C6", .5), ("r", 1.5)] * 8, bpm, "sine", vol=0.14)
+    roots = ["C3", "A2", "F2", "G2"] * 2
+    bass = render_track([(r, 2) for r in roots], bpm, "triangle", vol=0.24)
+    bass = np.concatenate([bass, bass])
+    return mix(lead, bell, bass)
+
+
 def main() -> None:
     np.random.seed(7)
     print("Erzeuge Audio ->", AUD)
     write_ogg(AUD / "music" / "level1.ogg", level_music())
+    write_ogg(AUD / "music" / "level2.ogg", level2_music())
+    write_ogg(AUD / "music" / "ice.ogg", ice_music())
     write_ogg(AUD / "music" / "title.ogg", title_music())
     for name, fn in [("jump", sfx_jump), ("coin", sfx_coin), ("stomp", sfx_stomp),
-                     ("hurt", sfx_hurt), ("win", sfx_win)]:
+                     ("hurt", sfx_hurt), ("win", sfx_win), ("spring", sfx_spring),
+                     ("grow", sfx_grow), ("checkpoint", sfx_checkpoint)]:
         write_wav(AUD / "sfx" / f"{name}.wav", fn())
         print(f"  sfx/{name}.wav")
     print("Fertig.")

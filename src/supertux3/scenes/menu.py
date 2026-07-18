@@ -25,9 +25,9 @@ class MenuScene(Scene):
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                from .play import PlayScene
+                from .levelselect import LevelSelectScene
                 self.game.lives = START_LIVES
-                self.game.scenes.switch(PlayScene(self.game))
+                self.game.scenes.switch(LevelSelectScene(self.game))
             elif event.key == pygame.K_ESCAPE:
                 self.game.running = False
             elif event.key == pygame.K_m:
@@ -49,9 +49,9 @@ class MenuScene(Scene):
         self._center(surface, GAME_TITLE, self.title_font, (255, 240, 120), int(VIRTUAL_H * 0.30))
         if int(self.t * 2) % 2 == 0:
             self._center(surface, "ENTER = Spielen", self.font, WHITE, VIRTUAL_H - 130)
-        self._center(surface, "Pfeile/WASD  bewegen   ·   Leertaste springen",
+        self._center(surface, "Pfeile/WASD bewegen · Leertaste springen · Gegner stampfen",
                      self.font, (220, 230, 245), VIRTUAL_H - 84)
-        self._center(surface, "M = Ton   ·   ESC = Beenden",
+        self._center(surface, "P = Pause   ·   M = Ton   ·   ESC = Beenden",
                      self.font, (200, 210, 230), VIRTUAL_H - 48)
 
     def _center(self, surface, text, font, color, y) -> None:

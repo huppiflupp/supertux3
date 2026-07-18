@@ -44,6 +44,7 @@ JUMP_CUTOFF = 0.45           # Faktor, wenn Sprungtaste früh losgelassen wird
 COYOTE_TIME = 0.08           # noch springen dürfen kurz nach Kantenabgang (zeitbasiert)
 JUMP_BUFFER = 0.10           # Sprungeingabe kurz vorm Landen puffern (zeitbasiert)
 STOMP_BOUNCE = 520.0         # Absprung nach Gegner-Stampfen
+SPRING_SPEED = 1240.0        # Absprung von einer Sprungfeder
 
 # --- Farben (Fallback / UI) ---------------------------------------------
 SKY_TOP = (92, 148, 252)
@@ -54,3 +55,9 @@ UI_SHADOW = (30, 30, 40)
 
 # --- Gameplay ------------------------------------------------------------
 START_LIVES = 3
+
+# Level-Reihenfolge (Dateien in levels/)
+LEVEL_FILES = [
+    "level1.json", "level2.json", "level3.json",
+    "level4.json", "level5.json", "level6.json",
+]

@@ -1,6 +1,8 @@
 """Kamera: folgt einem Ziel weich und bleibt in den Levelgrenzen."""
 from __future__ import annotations
 
+import random
+
 import pygame
 
 from ..settings import VIRTUAL_W, VIRTUAL_H
@@ -12,6 +14,18 @@ class Camera:
         self.level_h = level_h
         self.x = 0.0
         self.y = 0.0
+        self._shake_t = 0.0
+        self._shake_dur = 1.0
+        self._shake_mag = 0.0
+        self._sx = 0.0
+        self._sy = 0.0
+
+    def add_shake(self, mag: float, dur: float = 0.3) -> None:
+        # stärkeres Shake gewinnt
+        if mag >= self._shake_mag * max(0.0, self._shake_t / self._shake_dur):
+            self._shake_mag = mag
+            self._shake_t = dur
+            self._shake_dur = dur
 
     def update(self, target_rect: pygame.Rect, dt: float, snap: bool = False) -> None:
         # Zielposition: Spieler leicht links der Mitte (mehr Vorausblick nach rechts)
@@ -26,6 +40,15 @@ class Camera:
             self.y += (goal_y - self.y) * k
         self._clamp()
 
+        # Screen-Shake abklingen lassen
+        if self._shake_t > 0:
+            self._shake_t -= dt
+            mag = self._shake_mag * max(0.0, self._shake_t / self._shake_dur)
+            self._sx = random.uniform(-mag, mag)
+            self._sy = random.uniform(-mag, mag)
+        else:
+            self._sx = self._sy = 0.0
+
     def _clamp(self) -> None:
         self.x = max(0.0, min(self.x, self.level_w - VIRTUAL_W))
         self.y = max(0.0, min(self.y, self.level_h - VIRTUAL_H))
@@ -36,7 +59,7 @@ class Camera:
 
     @property
     def offset(self) -> tuple[int, int]:
-        return (int(self.x), int(self.y))
+        return (int(self.x + self._sx), int(self.y + self._sy))
 
     def apply(self, rect: pygame.Rect) -> pygame.Rect:
         return rect.move(-int(self.x), -int(self.y))

@@ -34,12 +34,16 @@ class Entity:
     def apply_gravity(self, dt: float) -> None:
         self.vy = min(self.vy + GRAVITY * dt, MAX_FALL_SPEED)
 
-    def move_and_collide(self, tilemap, dt: float) -> None:
-        """Bewegt die Entity und löst Kollisionen achsenweise auf."""
+    def move_and_collide(self, tilemap, dt: float, extra_solids=()) -> None:
+        """Bewegt die Entity und löst Kollisionen achsenweise auf.
+
+        extra_solids: zusätzliche feste Rechtecke (z.B. bewegliche Plattformen).
+        """
         # --- horizontal ---
         self.x += self.vx * dt
         rect = self.rect
-        for solid in tilemap.solid_rects_around(rect):
+        solids = list(tilemap.solid_rects_around(rect)) + list(extra_solids)
+        for solid in solids:
             if rect.colliderect(solid):
                 if self.vx > 0:
                     rect.right = solid.left
@@ -52,7 +56,8 @@ class Entity:
         self.on_ground = False
         self.y += self.vy * dt
         rect = self.rect
-        for solid in tilemap.solid_rects_around(rect):
+        solids = list(tilemap.solid_rects_around(rect)) + list(extra_solids)
+        for solid in solids:
             if rect.colliderect(solid):
                 if self.vy > 0:
                     rect.bottom = solid.top

@@ -1,4 +1,4 @@
-"""Der Spieler-Pinguin „Pengu"."""
+"""Der Spieler-Pinguin „Pengu" mit Zuständen klein/groß und Juice."""
 from __future__ import annotations
 
 import pygame
@@ -15,22 +15,20 @@ RIGHT_KEYS = (pygame.K_RIGHT, pygame.K_d)
 JUMP_KEYS = (pygame.K_SPACE, pygame.K_UP, pygame.K_w)
 DUCK_KEYS = (pygame.K_DOWN, pygame.K_s)
 
-SPRITE_W, SPRITE_H = 40, 48
-HITBOX_W, HITBOX_H = 24, 44
-SPRITE_OFF_X = (HITBOX_W - SPRITE_W) // 2   # Sprite mittig auf Hitbox
-SPRITE_OFF_Y = HITBOX_H - SPRITE_H          # unten bündig
+# (sprite_w, sprite_h, hitbox_w, hitbox_h) je Zustand
+FORM = {
+    "small": (40, 48, 24, 44),
+    "big":   (60, 72, 34, 66),
+}
 
 
 class Player(Entity):
     def __init__(self, x: float, y: float, assets):
-        super().__init__(x, y, HITBOX_W, HITBOX_H)
-        self.anims = {
-            "idle": Animation(assets.player["idle"], fps=3),
-            "walk": Animation(assets.player["walk"], fps=12),
-            "jump": Animation(assets.player["jump"], fps=1),
-            "fall": Animation(assets.player["fall"], fps=1),
-            "duck": Animation(assets.player["duck"], fps=1),
-        }
+        w, h = FORM["small"][2], FORM["small"][3]
+        super().__init__(x, y, w, h)
+        self.assets = assets
+        self.power = "small"
+        self._build_anims()
         self.state = "idle"
         self.coyote = 0.0
         self.buffer = 0.0
@@ -39,9 +37,48 @@ class Player(Entity):
         self.ducking = False
         self.invuln = 0.0
         self.coins = 0
+        self.scale_x = 1.0
+        self.scale_y = 1.0
+        # Ereignis-Flags (von der Szene für Effekte ausgelesen)
+        self.ev_jumped = False
+        self.ev_landed = False
+        self.land_vy = 0.0
+
+    # --- Formwechsel -------------------------------------------------
+    def _build_anims(self):
+        frames = self.assets.player if self.power == "small" else self.assets.player_big
+        self.anims = {
+            "idle": Animation(frames["idle"], fps=3),
+            "walk": Animation(frames["walk"], fps=12),
+            "jump": Animation(frames["jump"], fps=1),
+            "fall": Animation(frames["fall"], fps=1),
+            "duck": Animation(frames["duck"], fps=1),
+        }
+
+    def _set_power(self, power: str):
+        if power == self.power:
+            return
+        old_bottom = self.y + self.h
+        sw, sh, hw, hh = FORM[power]
+        self.power = power
+        self.w, self.h = hw, hh
+        self.x += (0)  # x-Mitte bleibt ~gleich (schmale Differenz ignorierbar)
+        self.y = old_bottom - self.h    # Füße bleiben am Boden
+        self._build_anims()
+
+    def grow(self) -> bool:
+        if self.power == "small":
+            self._set_power("big")
+            self.invuln = 0.6
+            self.scale_x, self.scale_y = 0.7, 1.4
+            return True
+        return False
 
     # --- Steuerung ---------------------------------------------------
     def update(self, dt: float, level) -> None:
+        self.ev_jumped = self.ev_landed = False
+        was_ground = self.on_ground
+
         keys = pygame.key.get_pressed()
         left = any(keys[k] for k in LEFT_KEYS)
         right = any(keys[k] for k in RIGHT_KEYS)
@@ -55,14 +92,9 @@ class Player(Entity):
             self.vx = max(-MAX_RUN_SPEED, min(MAX_RUN_SPEED, self.vx))
             self.facing = move
         elif self.on_ground:
-            # Reibung
             fr = GROUND_FRICTION * dt
-            if abs(self.vx) <= fr:
-                self.vx = 0.0
-            else:
-                self.vx -= fr * (1 if self.vx > 0 else -1)
+            self.vx = 0.0 if abs(self.vx) <= fr else self.vx - fr * (1 if self.vx > 0 else -1)
 
-        # Sprung: Coyote-Zeit + Eingabepuffer
         self.coyote = COYOTE_TIME if self.on_ground else max(0.0, self.coyote - dt)
         jump_pressed = jump_held and not self.prev_jump
         self.buffer = JUMP_BUFFER if jump_pressed else max(0.0, self.buffer - dt)
@@ -72,8 +104,9 @@ class Player(Entity):
             self.coyote = 0.0
             self.buffer = 0.0
             self.jump_active = True
+            self.ev_jumped = True
+            self.scale_x, self.scale_y = 0.8, 1.2
             level.game.audio.play("jump")
-        # variabler Sprung: Taste früh losgelassen -> Aufstieg kappen
         if self.jump_active and not jump_held and self.vy < 0:
             self.vy *= JUMP_CUTOFF
             self.jump_active = False
@@ -82,10 +115,21 @@ class Player(Entity):
         self.prev_jump = jump_held
 
         self.apply_gravity(dt)
-        self.move_and_collide(level.tilemap, dt)
+        pre_vy = self.vy
+        self.move_and_collide(level.tilemap, dt, level.platform_rects())
+
+        # gelandet?
+        if not was_ground and self.on_ground and pre_vy > 120:
+            self.ev_landed = True
+            self.land_vy = pre_vy
+            self.scale_x, self.scale_y = 1.25, 0.78
 
         if self.invuln > 0:
             self.invuln -= dt
+
+        # Squash/Stretch zurückfedern
+        self.scale_x += (1.0 - self.scale_x) * min(1.0, 12 * dt)
+        self.scale_y += (1.0 - self.scale_y) * min(1.0, 12 * dt)
 
         self._update_anim(dt)
 
@@ -100,28 +144,41 @@ class Player(Entity):
             self.state = "idle"
         anim = self.anims[self.state]
         if self.state == "walk":
-            # Laufanimation an Tempo koppeln
-            anim.frame_time = 1.0 / max(6.0, 4.0 + abs(self.vx) * 0.09)
+            anim.frame_time = 1.0 / max(6.0, 4.0 + abs(self.vx) * 0.05)
         anim.update(dt)
 
-    # --- Kampf / Treffer --------------------------------------------
-    def bounce(self) -> None:
-        self.vy = -STOMP_BOUNCE
+    # --- Treffer / Kampf --------------------------------------------
+    def bounce(self, strength: float = 1.0) -> None:
+        self.vy = -STOMP_BOUNCE * strength
         self.jump_active = False
+        self.scale_x, self.scale_y = 0.85, 1.15
 
-    def hurt(self) -> bool:
-        """Nimmt Schaden, wenn nicht unverwundbar. True = tatsächlich getroffen."""
+    def take_hit(self) -> str:
+        """Gibt 'die', 'shrink' oder 'none' zurück."""
         if self.invuln > 0 or self.dead:
-            return False
+            return "none"
+        if self.power == "big":
+            self._set_power("small")
+            self.invuln = 1.6
+            return "shrink"
         self.invuln = 1.5
-        return True
+        return "die"
 
     # --- Zeichnen ----------------------------------------------------
     def draw(self, surface: pygame.Surface, camera) -> None:
         if self.invuln > 0 and int(self.invuln * 20) % 2 == 0:
-            return  # Blinken bei Unverwundbarkeit
+            return
         img = self.anims[self.state].image
         if self.facing < 0:
             img = pygame.transform.flip(img, True, False)
+        iw, ih = img.get_size()
+        sx = max(0.2, self.scale_x)
+        sy = max(0.2, self.scale_y)
+        if abs(sx - 1) > 0.01 or abs(sy - 1) > 0.01:
+            img = pygame.transform.smoothscale(img, (max(1, int(iw * sx)), max(1, int(ih * sy))))
         ox, oy = camera.offset
-        surface.blit(img, (round(self.x) + SPRITE_OFF_X - ox, round(self.y) + SPRITE_OFF_Y - oy))
+        # unten-mittig auf der Hitbox verankern
+        bx = self.x + self.w / 2
+        by = self.y + self.h
+        surface.blit(img, (int(bx - img.get_width() / 2 - ox),
+                           int(by - img.get_height() - oy)))
