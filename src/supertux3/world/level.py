@@ -52,6 +52,8 @@ class Level:
         bg_default, music_default = THEMES.get(theme, THEMES["grass"])
         self.background_name = data.get("background", bg_default)
         self.music = data.get("music", music_default)
+        self.weather = data.get("weather", "none")     # rain|snow|fog|none
+        self.wind = float(data.get("wind", 0.0))       # px/s^2, +rechts / -links
         self.tilemap = Tilemap(data.get("solid", []), game.assets.tileset, TILE)
 
         sx, sy = data.get("spawn", [2, 2])

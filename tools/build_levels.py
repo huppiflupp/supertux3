@@ -80,7 +80,8 @@ class B:
                 if placed:
                     break
 
-    def dump(self, path, name, theme, spawn=(2, FLOOR), bg=None, music=None):
+    def dump(self, path, name, theme, spawn=(2, FLOOR), bg=None, music=None,
+             weather=None, wind=0.0):
         if not any(e[0] == "star" for e in self.ent) and \
                 not any(e[0] == "boss" for e in self.ent):
             self.sprinkle_stars()
@@ -91,6 +92,10 @@ class B:
             data["background"] = bg
         if music:
             data["music"] = music
+        if weather:
+            data["weather"] = weather
+        if wind:
+            data["wind"] = wind
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=0)
         print(f"  {path.name}: {name} ({self.w}x{H}, {len(self.ent)} ent, {len(self.props)} props)")
@@ -202,7 +207,7 @@ def level4():
         b.e("snowball", ex, FLOOR)
     b.e("spring", 88, FLOOR)
     b.e("checkpoint", 70, FLOOR); b.e("goal", 156, FLOOR)
-    b.dump(LV / "level4.json", "Eishöhle", "ice")
+    b.dump(LV / "level4.json", "Eishöhle", "ice", weather="snow")
 
 
 # --- Level 5: Nacht am Hügel – Mix --------------------------------------
@@ -230,7 +235,7 @@ def level5():
         b.prop("tree", t)
     for t, y in [(20, 2), (70, 1), (130, 2)]:
         b.prop("cloud", t, y)
-    b.dump(LV / "level5.json", "Nacht am Hügel", "night")
+    b.dump(LV / "level5.json", "Nacht am Hügel", "night", weather="fog")
 
 
 # --- Level 6: Kristallhöhle – Finale ------------------------------------
@@ -283,7 +288,7 @@ def level7():
         b.e("snowball", ex, FLOOR)
     b.e("flyer", 62, 7, 6); b.e("flyer", 128, 6, 7)
     b.e("checkpoint", 92, FLOOR); b.e("goal", 166, FLOOR)
-    b.dump(LV / "level7.json", "Frostwind-Grat", "ice")
+    b.dump(LV / "level7.json", "Frostwind-Grat", "ice", weather="snow", wind=-220)
 
 
 # --- Level 8: Tiefe Stollen (Höhle) -------------------------------------
@@ -396,7 +401,7 @@ def level12():
         b.e("snowball", ex, FLOOR)
     b.e("flyer", 70, 6, 6); b.e("flyer", 134, 5, 7)
     b.e("checkpoint", 88, FLOOR); b.e("goal", 181, FLOOR)
-    b.dump(LV / "level12.json", "Frostpalast", "ice")
+    b.dump(LV / "level12.json", "Frostpalast", "ice", weather="snow", wind=200)
 
 
 def level13():
@@ -422,7 +427,7 @@ def level13():
     b.e("checkpoint", 88, FLOOR); b.e("goal", 181, FLOOR)
     for t, y in [(10, 1), (60, 2), (120, 1)]:
         b.prop("cloud", t, y)
-    b.dump(LV / "level13.json", "Sternenschlucht", "night")
+    b.dump(LV / "level13.json", "Sternenschlucht", "night", weather="fog")
 
 
 def level14():
@@ -646,7 +651,7 @@ def level22():
     for t in (34, 90, 126):
         b.prop("barrier", t)
     b.prop("skyscraper", 74); b.prop("skyscraper", 155)
-    b.dump(LV / "level22.json", "Innenstadt bei Nacht", "city")
+    b.dump(LV / "level22.json", "Innenstadt bei Nacht", "city", weather="rain")
 
 
 def level23():

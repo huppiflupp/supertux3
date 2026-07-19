@@ -8,6 +8,7 @@ import pygame
 from ..engine.scene import Scene
 from ..engine.camera import Camera
 from ..engine.particles import Particles
+from ..engine.weather import Weather
 from ..world.level import Level
 from ..entities.collectible import Coin, GrowItem, Star, FishItem
 from ..entities.projectiles import Projectile
@@ -57,6 +58,7 @@ class PlayScene(Scene):
         self.icons = {"coin": _icon(A.coin[0]), "heart": _icon(A.heart),
                       "star": _icon(A.star), "clock": _icon(A.clock),
                       "fish": _icon(A.fish, 20)}
+        self.weather = Weather(self.level.weather, self.level.wind)
         self._build_background()
         track = f"{self.game.music_choice}.ogg" if self.game.music_choice else self.level.music
         if track:
@@ -150,6 +152,7 @@ class PlayScene(Scene):
                 g.update(dt, lvl)
             if self.rain_t > 0:
                 self._update_fish_rain(dt)
+            self.weather.update(dt)
             self.elapsed += dt
 
             self._player_effects()
@@ -568,6 +571,7 @@ class PlayScene(Scene):
         self.particles.draw(surface, cam)
         if self.rain_t > 0:                      # Flugzeug beim Fischregen (Bildschirm-fix)
             surface.blit(self.game.assets.plane, (int(self.plane_x), 24))
+        self.weather.draw(surface)               # Regen/Schnee/Nebel-Overlay
         self._draw_hud(surface)
         if self.mode == "complete":
             self._center_text(surface, "Geschafft!", self.big_font, (255, 240, 120))

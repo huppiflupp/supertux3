@@ -106,6 +106,11 @@ class Player(Entity):
             fr = GROUND_FRICTION * dt
             self.vx = 0.0 if abs(self.vx) <= fr else self.vx - fr * (1 if self.vx > 0 else -1)
 
+        # Wind schiebt den Pinguin (stärker in der Luft -> weiter/kürzer springen)
+        wind = getattr(level, "wind", 0.0)
+        if wind:
+            self.vx += wind * dt * (1.0 if not self.on_ground else 0.35)
+
         self.coyote = COYOTE_TIME if self.on_ground else max(0.0, self.coyote - dt)
         jump_pressed = jump_held and not self.prev_jump
         self.buffer = JUMP_BUFFER if jump_pressed else max(0.0, self.buffer - dt)
