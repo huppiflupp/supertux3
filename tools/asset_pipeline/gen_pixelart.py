@@ -1400,13 +1400,14 @@ def gen_friend():
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_friend()
-    gen_egypt_bg()
+    # Hinweis: egypt_desert/space_bg/city_bg werden per FLUX (ComfyUI) erzeugt und
+    # NICHT mehr prozedural überschrieben. Fallback-Generatoren gen_egypt_bg/
+    # gen_space_bg/gen_city_bg existieren weiterhin und können bei Bedarf manuell
+    # aufgerufen werden.
     gen_egypt_props()
     gen_cat()
-    gen_space_bg()
     gen_space_props()
     gen_alien()
-    gen_city_bg()
     gen_city_props()
     gen_robot()
     gen_tileset()
