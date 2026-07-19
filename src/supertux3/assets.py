@@ -82,8 +82,10 @@ class Assets:
         }
         self.iceball = load_image(IMAGE_DIR / "enemies" / "iceball.png")
 
-        for name in ("bush", "cloud", "tree", "flag"):
+        for name in ("bush", "cloud", "tree", "flag",
+                     "pyramid", "sphinx", "palm", "cactus"):
             self.props[name] = load_image(IMAGE_DIR / "props" / f"{name}.png")
+        self.cat = slice_strip(load_image(IMAGE_DIR / "enemies" / "cat.png"), 30, 24)
 
         self.item_grow = load_image(IMAGE_DIR / "collectibles" / "grow.png")
         self.star = load_image(IMAGE_DIR / "collectibles" / "star.png")

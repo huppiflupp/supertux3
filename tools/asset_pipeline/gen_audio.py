@@ -281,6 +281,25 @@ def cave_music():
     return mix(L, A2, bs, dr)
 
 
+def egypt_music():
+    # Phrygisch-dominant (A B♭ C# D E F G) -> orientalischer Klang
+    bpm = 132
+    A = [("A4", .5), ("A#4", .5), ("C#5", .5), ("A#4", .5),
+         ("A4", .5), ("G4", .5), ("A4", 1.0),
+         ("D5", .5), ("C#5", .5), ("A#4", .5), ("A4", .5),
+         ("G4", .5), ("F4", .5), ("A4", 1.0)]
+    B = [("E5", .5), ("F5", .5), ("E5", .5), ("C#5", .5),
+         ("D5", .5), ("A#4", .5), ("A4", 1.0),
+         ("C#5", .5), ("D5", .5), ("E5", .5), ("F5", .5),
+         ("E5", .5), ("C#5", .5), ("A4", 1.0)]
+    L = lead(A + B + A + B, bpm, duty=0.25, vol=0.2, vib=8)
+    drone = bass(rep([("A2", 1)], 28), bpm, vol=0.26)
+    A2 = arp(rep([(["A3", "C#4", "E4"], 1), (["A3", "D4", "F4"], 1),
+                  (["A3", "C#4", "E4"], 1), (["G3", "A#3", "D4"], 1)], 7), bpm, vol=0.11, rate=0.125)
+    dr = drums(rep("k.h.k.kh", 14), bpm, vol=0.85)
+    return mix(L, drone, A2, dr)
+
+
 def boss_music():
     bpm = 160
     # düster, treibend (a-moll/vermindert)
@@ -365,7 +384,7 @@ def main():
     tracks = {
         "title": title_music, "level1": grass_music, "level2": sunset_music,
         "level3": night_music, "ice": ice_music, "cave": cave_music,
-        "boss": boss_music,
+        "egypt": egypt_music, "boss": boss_music,
     }
     for name, fn in tracks.items():
         write_ogg(AUD / "music" / f"{name}.ogg", fn())

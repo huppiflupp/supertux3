@@ -849,8 +849,143 @@ def gen_shield():
     _save(p.result(), "collectibles", "shield.png")
 
 
+# =========================================================================
+#  Ägypten-Welt: Hintergrund, Pyramide/Sphinx/Palme/Kaktus, Katzen-Gegner
+# =========================================================================
+def gen_egypt_bg():
+    W, Hh = 1536, 768
+    img = Image.new("RGB", (W, Hh))
+    d = ImageDraw.Draw(img)
+    top, bot = (247, 196, 120), (255, 236, 186)
+    for y in range(Hh):
+        f = y / (Hh - 1)
+        d.line([(0, y), (W, y)], fill=tuple(int(top[i] + (bot[i] - top[i]) * f) for i in range(3)))
+    # Sonne mit weichem Schein
+    sx, sy = int(W * 0.70), int(Hh * 0.30)
+    for r in range(260, 60, -14):
+        t = (260 - r) / 200
+        col = tuple(int(255 - 6 * (1 - t)) for _ in range(1)) + (0,)
+        c = (min(255, 250 + int(5 * t)), min(255, 226 + int(28 * t)), 150 + int(70 * t))
+        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=c)
+    d.ellipse([sx - 66, sy - 66, sx + 66, sy + 66], fill=(255, 252, 232))
+    hor = int(Hh * 0.64)
+
+    def pyramid(cx, wd, ht, col, colhi):
+        d.polygon([(cx, hor - ht), (cx - wd, hor), (cx + wd, hor)], fill=col)
+        d.polygon([(cx, hor - ht), (cx + wd, hor), (cx + int(wd * 0.12), hor)], fill=colhi)
+        for k in range(1, 6):        # Blockreihen
+            yy = hor - int(ht * k / 6)
+            hw = int(wd * (6 - k) / 6)
+            d.line([(cx - hw, yy), (cx + hw, yy)], fill=(170, 138, 84), width=2)
+    pyramid(int(W * 0.30), 175, 178, (208, 172, 110), (224, 190, 128))
+    pyramid(int(W * 0.44), 128, 128, (198, 162, 100), (214, 180, 118))
+    pyramid(int(W * 0.86), 150, 150, (204, 168, 106), (220, 186, 124))
+    # Dünen (hinten hell -> vorne dunkler)
+    import math as _m
+    for li, (cy, col) in enumerate([(hor + 20, (232, 200, 138)),
+                                    (hor + 90, (220, 186, 122)),
+                                    (hor + 170, (206, 172, 108))]):
+        pts = [(0, Hh)]
+        for x in range(0, W + 24, 24):
+            pts.append((x, cy + int(_m.sin(x * 0.004 + li) * 26)))
+        pts.append((W, Hh))
+        d.polygon(pts, fill=col)
+    (IMG / "background").mkdir(parents=True, exist_ok=True)
+    img.save(IMG / "background" / "egypt_desert.png")
+    print("  background/egypt_desert.png  (1536, 768)")
+
+
+def gen_egypt_props():
+    SAND = (214, 178, 116, 255); SAND_HI = (232, 200, 140, 255); SAND_LO = (176, 142, 86, 255)
+    # Pyramide (96x84)
+    p = Pen(96, 84)
+    p.poly([(48, 2), (2, 82), (94, 82)], fill=SAND)
+    p.poly([(48, 2), (94, 82), (54, 82)], fill=SAND_LO)
+    for k in range(1, 7):
+        yy = 2 + int(80 * k / 7)
+        hw = int(46 * k / 7)
+        p.line([(48 - hw, yy), (48 + hw, yy)], width=1, fill=(160, 128, 78, 255))
+    p.poly([(48, 2), (44, 14), (52, 14)], fill=SAND_HI)   # Spitzenglanz
+    _save(p.result(), "props", "pyramid.png")
+
+    # Sphinx (96x56)
+    p = Pen(96, 56)
+    p.rounded([6, 30, 84, 54], 5, fill=SAND)              # liegender Körper
+    p.rect([70, 30, 90, 54], fill=SAND_LO)
+    p.ellipse([70, 8, 94, 40], fill=SAND)                 # Kopf
+    p.rect([72, 6, 92, 20], fill=(70, 96, 150, 255))      # Nemes-Kopftuch
+    p.rect([72, 6, 92, 10], fill=(210, 180, 60, 255))
+    for ex in (78, 88):
+        p.ellipse([ex - 2, 22, ex + 2, 26], fill=WHITE)
+        p.ellipse([ex - 0.7, 23.3, ex + 0.7, 24.7], fill=PUP)
+    p.poly([(6, 30), (2, 52), (12, 52)], fill=SAND_LO)    # Vorderpfoten
+    p.line([(20, 40), (60, 40)], width=1, fill=SAND_LO)
+    _save(p.result(), "props", "sphinx.png")
+
+    # Palme (56x88)
+    p = Pen(56, 88)
+    p.rounded([24, 30, 32, 88], 3, fill=(150, 110, 66, 255))
+    for yy in range(34, 84, 8):
+        p.line([(24, yy), (32, yy)], width=1, fill=(120, 86, 50, 255))
+    GRN = (78, 168, 82, 255); GRN_LO = (56, 134, 64, 255)
+    for ang, ln in [(-70, 26), (-30, 30), (10, 30), (50, 28), (90, 22), (130, 26)]:
+        ex = 28 + ln * _c(ang); ey = 30 + ln * _s(ang) * 0.6 - 6
+        p.line([(28, 30), (ex, ey)], width=3, fill=GRN)
+        p.ellipse([ex - 4, ey - 3, ex + 4, ey + 3], fill=GRN_LO)
+    for cx, cy in ((26, 28), (31, 30), (28, 33)):
+        p.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(150, 100, 50, 255))  # Datteln
+    _save(p.result(), "props", "palm.png")
+
+    # Kaktus (32x52)
+    p = Pen(32, 52)
+    CAC = (72, 150, 88, 255); CAC_LO = (52, 120, 70, 255)
+    p.rounded([12, 6, 20, 52], 4, fill=CAC)
+    p.rounded([4, 20, 12, 34], 4, fill=CAC); p.rounded([4, 20, 12, 24], 3, fill=CAC)
+    p.rounded([20, 14, 28, 28], 4, fill=CAC)
+    p.line([(16, 8), (16, 50)], width=1, fill=CAC_LO)
+    for yy in range(10, 50, 6):
+        for sx2 in (11, 21):
+            p.ellipse([sx2 - 0.6, yy - 0.6, sx2 + 0.6, yy + 0.6], fill=(230, 240, 200, 255))
+    _save(p.result(), "props", "cactus.png")
+
+
+def draw_cat(step: int) -> Image.Image:
+    p = Pen(30, 24)
+    GOLD = (226, 176, 92, 255); GOLD_LO = (196, 148, 72, 255); DARK = (60, 44, 30, 255)
+    p.ellipse([5, 10, 24, 21], fill=OUT)
+    p.ellipse([6, 11, 23, 20], fill=GOLD)                 # Körper
+    p.ellipse([7, 15, 22, 20], fill=GOLD_LO)
+    # Schwanz (wippt)
+    ty = 9 if step == 0 else 12
+    p.line([(23, 16), (28, ty)], width=2, fill=GOLD)
+    p.ellipse([26, ty - 2, 29, ty + 1], fill=DARK)
+    # Kopf
+    p.ellipse([2, 6, 13, 17], fill=GOLD)
+    p.poly([(3, 8), (2, 1), (7, 6)], fill=GOLD)           # Ohren
+    p.poly([(12, 8), (13, 1), (8, 6)], fill=GOLD)
+    p.poly([(3.5, 7), (3, 3), (5.5, 6)], fill=(180, 120, 120, 255))
+    for ex in (5, 10):
+        p.ellipse([ex - 1.5, 9, ex + 1.5, 12], fill=(120, 210, 120, 255))
+        p.line([(ex, 9), (ex, 12)], width=.8, fill=PUP)
+        p.line([(ex - 2, 8.5), (ex + 2, 8.5)], width=.8, fill=DARK)   # Kajal
+    p.poly([(6.5, 12.5), (8.5, 12.5), (7.5, 14)], fill=(200, 120, 110, 255))  # Nase
+    # Beine (alternieren)
+    fo = 2 if step == 0 else -2
+    for cx in (10, 19):
+        off = fo if cx == 19 else -fo
+        p.rect([cx + off, 20, cx + 2 + off, 24], fill=GOLD_LO)
+    return p.result()
+
+
+def gen_cat():
+    _save(_sheet([draw_cat(0), draw_cat(1)], 30, 24), "enemies", "cat.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
+    gen_egypt_bg()
+    gen_egypt_props()
+    gen_cat()
     gen_tileset()
     gen_pengu()
     gen_pengu_big()

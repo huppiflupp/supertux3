@@ -462,10 +462,95 @@ def level15():
     b.dump(LV / "level15.json", "Schattenkönigs Thron", "cave", music="boss.ogg")
 
 
+# --- Welt Ägypten (Sand "A" / Sandstein "W") ----------------------------
+def level16():
+    b = B(170)
+    pits = [(28, 32), (54, 60), (86, 91), (118, 124), (146, 151)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="A", fill="W"); x = c + 1
+    b.ground(x, 169, ch="A", fill="W")
+    for x0, x1, y in [(20, 26, 11), (66, 72, 10), (100, 106, 11), (132, 138, 10)]:
+        b.plat(x0, x1, y, "W")
+    b.e("spring", 26, FLOOR); b.e("spring", 84, FLOOR); b.e("spring", 144, FLOOR)
+    b.arc(30, 8); b.arc(57, 9); b.arc(88, 8); b.arc(121, 9); b.arc(148, 8)
+    b.coins(66, 72, 8); b.coins(100, 106, 9); b.coins(132, 138, 8)
+    b.e("growth", 68, 8); b.e("fish", 22, 12)
+    for ex in (16, 44, 78, 110, 158):
+        b.e("cat", ex, FLOOR)
+    for ex in (40, 96):
+        b.e("snowball", ex, FLOOR)
+    b.e("checkpoint", 92, FLOOR); b.e("goal", 166, FLOOR)
+    for t in (10, 50, 108, 140):
+        b.prop("palm", t)
+    for t in (34, 90):
+        b.prop("cactus", t)
+    b.prop("pyramid", 74); b.prop("sphinx", 126)
+    b.dump(LV / "level16.json", "Wüstensand", "egypt")
+
+
+def level17():
+    b = B(180)
+    pits = [(24, 29), (48, 54), (78, 84), (108, 114), (140, 146), (162, 167)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="A", fill="W"); x = c + 1
+    b.ground(x, 179, ch="A", fill="W")
+    for x0, x1, y in [(34, 40, 10), (66, 72, 9), (96, 102, 11), (126, 132, 9)]:
+        b.plat(x0, x1, y, "W")
+    b.e("mplat", 48, 12, 54, 9, 3); b.e("mplat", 108, 11, 114, 11, 3)
+    b.e("box", 36, 8); b.e("box", 37, 8)
+    b.e("spring", 22, FLOOR); b.e("spring", 76, FLOOR); b.e("spring", 138, FLOOR)
+    for cx in (26, 50, 80, 110, 143):
+        b.arc(cx, 8)
+    b.e("growth", 68, 7); b.e("fishrain", 100, 8)
+    for ex in (16, 62, 120, 174):
+        b.e("cat", ex, FLOOR)
+    for ex in (44, 90, 150):
+        b.e("shooter", ex, FLOOR)
+    b.e("flyer", 70, 6, 6); b.e("flyer", 130, 6, 7)
+    b.e("checkpoint", 86, FLOOR); b.e("goal", 176, FLOOR)
+    b.prop("pyramid", 30); b.prop("pyramid", 150); b.prop("sphinx", 92)
+    for t in (12, 160):
+        b.prop("palm", t)
+    b.dump(LV / "level17.json", "Tal der Könige", "egypt")
+
+
+def level18():
+    b = B(185)
+    pits = [(22, 26), (44, 50), (70, 76), (98, 104), (126, 132), (156, 162)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="A", fill="W"); x = c + 1
+    b.ground(x, 184, ch="A", fill="W")
+    for x0, x1, y in [(32, 38, 10), (60, 66, 9), (90, 96, 11), (120, 126, 9), (150, 156, 10)]:
+        b.plat(x0, x1, y, "W")
+    b.e("mplat", 44, 12, 50, 9, 3); b.e("mplat", 98, 11, 104, 11, 3)
+    b.e("box", 34, 7); b.e("box", 122, 7)
+    b.e("spring", 20, FLOOR); b.e("spring", 88, FLOOR); b.e("spring", 148, FLOOR)
+    for cx in (24, 46, 72, 100, 128, 158):
+        b.arc(cx, 8)
+    b.e("growth", 62, 7); b.e("fish", 34, 12)
+    for ex in (16, 56, 108, 168):
+        b.e("cat", ex, FLOOR)
+    for ex in (36, 80, 138):
+        b.e("spiky", ex, FLOOR)
+    for ex in (66, 116):
+        b.e("shooter", ex, FLOOR)
+    b.e("flyer", 52, 6, 6); b.e("flyer", 112, 6, 7)
+    b.e("checkpoint", 78, FLOOR); b.e("checkpoint", 134, FLOOR)
+    b.e("goal", 181, FLOOR)
+    b.prop("pyramid", 28); b.prop("sphinx", 70); b.prop("pyramid", 160)
+    for t in (14, 142):
+        b.prop("cactus", t)
+    b.dump(LV / "level18.json", "Pyramidengruft", "egypt")
+
+
 def main():
     print("Baue Level ->", LV)
     for fn in (level1, level2, level3, level4, level5, level6, level7, level8,
-               level9, level10, level11, level12, level13, level14, level15):
+               level9, level10, level11, level12, level13, level14, level15,
+               level16, level17, level18):
         fn()
     print("Fertig.")
 
