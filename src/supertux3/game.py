@@ -60,6 +60,8 @@ class Game:
         self.audio.muted = bool(self.save_data.get("muted", False))
         self.quality = self.opts.get("quality") or self.save_data.get("quality", "smooth")
         self.fps_cap = int(self.opts.get("fps") or self.save_data.get("fps", 60))
+        from .engine import controls
+        self.keys = controls.load_keys(self.save_data)
         want_fs = self.opts.get("fullscreen")
         if want_fs is None:
             want_fs = self.save_data.get("fullscreen", False)
@@ -119,6 +121,7 @@ class Game:
         self.save_data["quality"] = self.quality
         self.save_data["fps"] = self.fps_cap
         self.save_data["fullscreen"] = self.fullscreen
+        self.save_data["keys"] = self.keys
         savemod.save(self.save_data)
 
     def _load_audio(self) -> None:

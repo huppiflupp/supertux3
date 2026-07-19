@@ -125,6 +125,35 @@ def test_second_boss():
     pygame.quit()
 
 
+def test_keybinding():
+    import os
+    import tempfile
+    os.environ["XDG_DATA_HOME"] = tempfile.mkdtemp()
+    from supertux3.game import Game
+    from supertux3.engine import save as sv
+    g = Game()
+    g.keys["jump"] = [pygame.K_k]
+    g.save_progress()
+    assert sv.load()["keys"]["jump"] == [pygame.K_k]
+    g2 = Game()                       # neu laden
+    assert g2.keys["jump"] == [pygame.K_k]
+    pygame.quit()
+
+
+def test_worldmap():
+    from supertux3.game import Game
+    from supertux3.scenes.worldmap import WorldMapScene
+    g = Game()
+    g.unlocked = 2
+    wm = WorldMapScene(g, 0)
+    g.scenes.switch(wm)
+    for _ in range(8):
+        wm.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT))
+    assert wm.sel <= g.unlocked          # gesperrte Level nicht wählbar
+    wm.draw(g.screen)
+    pygame.quit()
+
+
 if __name__ == "__main__":
     test_assets_and_menu()
     test_level_and_physics()
@@ -133,4 +162,6 @@ if __name__ == "__main__":
     test_save_roundtrip()
     test_editor_roundtrip()
     test_second_boss()
+    test_keybinding()
+    test_worldmap()
     print("Smoke-Tests OK")

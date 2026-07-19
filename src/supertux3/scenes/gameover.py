@@ -26,9 +26,9 @@ class ResultScene(Scene):
     def handle_event(self, event: pygame.event.Event) -> None:
         from ..engine.controls import nav
         if nav(event) in ("confirm", "back"):
-            from .levelselect import LevelSelectScene
+            from .worldmap import WorldMapScene
             self.game.lives = START_LIVES
-            self.game.scenes.switch(LevelSelectScene(self.game))
+            self.game.scenes.switch(WorldMapScene(self.game))
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill((24, 34, 58) if not self.won else (32, 64, 40))

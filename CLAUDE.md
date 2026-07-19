@@ -84,8 +84,9 @@ supertux3/
 │   └── scenes/
 │       ├── intro.py           # animierte Titel-Intro (überspringbar)
 │       ├── menu.py            # Titelmenü (nutzt title_art.png)
-│       ├── levelselect.py     # Level-Auswahl 3x5 (Sterne/Bestzeit/Fortschritt)
-│       ├── options.py         # Optionen (Grafik/FPS/Vollbild/Lautstärke)
+│       ├── worldmap.py        # Welt-Karte (Knoten/Pfad/Avatar) – Level wählen
+│       ├── options.py         # Optionen (Grafik/FPS/Vollbild/Lautstärke/Steuerung)
+│       ├── keybind.py         # freie Tastenbelegung
 │       ├── editor.py          # In-Game-Level-Editor (Maus+Tastatur)
 │       ├── play.py            # Gameplay (Effekte, Power-Up, Sterne/Timer, Boss)
 │       └── gameover.py        # Ergebnis-Szene (Level/Spiel geschafft / Game Over)
@@ -163,6 +164,16 @@ supertux3/
   Nutzer-Installer `install-user.sh`, Flatpak/RPM/DEB, Desktop-Eintrag + Icon
   (`tools/asset_pipeline/gen_icon.py`). Siehe `docs/packaging.md`.
 - **Raspberry Pi 400**: `docs/pi400.md` (Python 3.11, `--quality fast`, KMSDRM).
+
+### Mechaniken (M6) — Welt-Karte & Steuerung
+- **Welt-Karte** (`scenes/worldmap.py`): scrollende Knotenkarte statt Liste;
+  `THEME_LOOK` färbt Knoten/Hintergrund je Welt; Avatar hüpft auf dem gewählten
+  Knoten; Sperre = `sel <= game.unlocked`. Menü/Pause(Q)/Ergebnis führen hierher,
+  und `PlayScene._next_level` kehrt nach jedem Level zur Karte zurück.
+- **Freie Tastenbelegung** (`engine/controls.py`: `ACTIONS`, `DEFAULT_KEYS`,
+  `load_keys`, `key_label`): `game.keys` wird aus dem Speicherstand gebaut; der
+  Spieler liest daraus (`player.update`). `scenes/keybind.py` belegt Tasten neu
+  (Optionen → Steuerung). Menü-Navigation bleibt fest (Pfeile/Enter/ESC + Gamepad).
 
 ---
 

@@ -81,12 +81,13 @@ class Player(Entity):
         was_ground = self.on_ground
 
         keys = pygame.key.get_pressed()
+        km = level.game.keys
         js = level.game.joysticks
         jmove = controls.move_x(js)
-        left = any(keys[k] for k in LEFT_KEYS) or jmove < 0
-        right = any(keys[k] for k in RIGHT_KEYS) or jmove > 0
-        jump_held = any(keys[k] for k in JUMP_KEYS) or controls.want_jump(js)
-        self.ducking = (any(keys[k] for k in DUCK_KEYS) or controls.want_duck(js)) and self.on_ground
+        left = any(keys[k] for k in km["left"]) or jmove < 0
+        right = any(keys[k] for k in km["right"]) or jmove > 0
+        jump_held = any(keys[k] for k in km["jump"]) or controls.want_jump(js)
+        self.ducking = (any(keys[k] for k in km["duck"]) or controls.want_duck(js)) and self.on_ground
 
         move = (1 if right else 0) - (1 if left else 0)
         accel = MOVE_ACCEL if self.on_ground else AIR_ACCEL

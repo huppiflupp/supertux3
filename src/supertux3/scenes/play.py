@@ -68,8 +68,8 @@ class PlayScene(Scene):
                 self.paused = False
                 self.on_enter()
             elif key == pygame.K_q:
-                from .levelselect import LevelSelectScene
-                self.game.scenes.switch(LevelSelectScene(self.game))
+                from .worldmap import WorldMapScene
+                self.game.scenes.switch(WorldMapScene(self.game, self.index))
             elif key == pygame.K_m:
                 self.game.audio.toggle_mute()
                 self.game.save_progress()
@@ -340,7 +340,8 @@ class PlayScene(Scene):
         nxt = self.index + 1
         self.game.unlocked = max(self.game.unlocked, nxt)
         if nxt < len(LEVEL_FILES):
-            self.game.scenes.switch(PlayScene(self.game, nxt))
+            from .worldmap import WorldMapScene
+            self.game.scenes.switch(WorldMapScene(self.game, nxt))
         else:
             from .gameover import ResultScene
             self.game.scenes.switch(ResultScene(self.game, won=True,
@@ -428,7 +429,7 @@ class PlayScene(Scene):
         veil.fill((10, 14, 28, 170))
         surface.blit(veil, (0, 0))
         self._center_text(surface, "Pause", self.big_font, WHITE)
-        lines = ["ESC/P = weiter    ·    R = neu    ·    Q = Level-Auswahl",
+        lines = ["ESC/P = weiter    ·    R = neu    ·    Q = Welt-Karte",
                  "M = Ton    ·    +/- = Lautstärke    ·    G = Grafik glatt/schnell"]
         for i, ln in enumerate(lines):
             img = self.font.render(ln, True, (215, 225, 240))

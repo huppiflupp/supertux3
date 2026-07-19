@@ -71,8 +71,16 @@ Parallax, Zielobjekt), nicht den Code.
 - [x] **Raspberry-Pi-400-Port**: Python-3.11-tauglich, ARM-Erkennung,
       KMSDRM/Perf-Doku (`docs/pi400.md`)
 
-### M6 — Ideen (offen)
-- [ ] Welt-Karte statt Liste; Story-Cutscenes; Tastenbelegung frei konfigurierbar
+### M6 — Welt-Karte & Steuerung ✅
+- [x] **Welt-Karte** (`scenes/worldmap.py`): scrollende Knotenkarte über 5 Welten,
+      Pengu-Avatar, farbige Level-Knoten, Sterne/Sperren, Pfad; ersetzt die Liste.
+      Nach jedem Level zurück zur Karte (Fortschritt sichtbar).
+- [x] **Freie Tastenbelegung** (`scenes/keybind.py`, `engine/controls.py`):
+      Links/Rechts/Springen/Ducken frei belegbar, persistent; Standard-Reset;
+      Zugang über Optionen → Steuerung.
+
+### M7 — Ideen (offen)
+- [ ] Story-Cutscenes zwischen Welten; abzweigende Kartenpfade/Geheimlevel
 - [ ] Mehr Gegner-/Boss-Typen, Schrägen im Tileset; Zeitangriff-Modus
 - [ ] Vollständig offline-reproduzierbarer Flatpak (vendored Wheels)
 

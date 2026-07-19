@@ -18,7 +18,8 @@ class OptionsScene(Scene):
         self.font = pygame.font.Font(None, 40)
         self.small = pygame.font.Font(None, 26)
         self.sel = 0
-        self.items = ["Grafik", "Bildrate", "Vollbild", "Musik", "Ton", "Zurück"]
+        self.items = ["Grafik", "Bildrate", "Vollbild", "Musik", "Ton",
+                      "Steuerung", "Zurück"]
 
     # --- Werte -------------------------------------------------------
     def _value(self, item):
@@ -73,6 +74,9 @@ class OptionsScene(Scene):
         elif act == "confirm":
             if item == "Zurück":
                 self._leave()
+            elif item == "Steuerung":
+                from .keybind import KeybindScene
+                self.game.scenes.switch(KeybindScene(self.game))
             else:
                 self._change(item, +1)
         elif act == "back":

@@ -20,6 +20,38 @@ _KEY_NAV = {
 # Gamepad-Buttons (Xbox-Layout)
 BTN_A, BTN_B, BTN_BACK, BTN_START = 0, 1, 6, 7
 
+# --- Frei belegbare Spiel-Aktionen --------------------------------------
+ACTIONS = ["left", "right", "jump", "duck"]
+ACTION_LABEL = {"left": "Links", "right": "Rechts", "jump": "Springen", "duck": "Ducken"}
+DEFAULT_KEYS = {
+    "left": [pygame.K_LEFT, pygame.K_a],
+    "right": [pygame.K_RIGHT, pygame.K_d],
+    "jump": [pygame.K_SPACE, pygame.K_UP, pygame.K_w],
+    "duck": [pygame.K_DOWN, pygame.K_s],
+}
+
+
+def load_keys(save_data: dict) -> dict:
+    """Baut die Keymap aus Standard + gespeicherten Überschreibungen."""
+    km = {a: list(v) for a, v in DEFAULT_KEYS.items()}
+    saved = save_data.get("keys") or {}
+    for a in ACTIONS:
+        keys = saved.get(a)
+        if keys:
+            try:
+                km[a] = [int(k) for k in keys]
+            except (TypeError, ValueError):
+                pass
+    return km
+
+
+def key_label(code: int) -> str:
+    try:
+        name = pygame.key.name(code)
+    except Exception:
+        name = ""
+    return name.upper() if name else f"#{code}"
+
 
 def nav(event) -> str | None:
     if event.type == pygame.KEYDOWN:

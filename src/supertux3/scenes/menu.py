@@ -26,9 +26,9 @@ class MenuScene(Scene):
         from ..engine.controls import nav
         act = nav(event)
         if act == "confirm":
-            from .levelselect import LevelSelectScene
+            from .worldmap import WorldMapScene
             self.game.lives = START_LIVES
-            self.game.scenes.switch(LevelSelectScene(self.game))
+            self.game.scenes.switch(WorldMapScene(self.game))
         elif act == "back":
             self.game.running = False
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_m:
