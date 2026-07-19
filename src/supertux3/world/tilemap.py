@@ -26,8 +26,13 @@ CHAR_TO_TILE: dict[str, int] = {
     "P": 10,  # Metallplatte (Raumstation)
     "C": 11,  # Asphalt / Straße (Stadt)
     "K": 12,  # Beton / Stahlträger (Baustelle)
+    "/": 13,  # Schräge steigend-rechts
+    "\\": 14, # Schräge steigend-links
 }
 SOLID_IDS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+# Schrägen sind NICHT im AABB-Sinn solide, sondern werden speziell aufgelöst:
+# id -> Richtung (+1 = steigt nach rechts "/", -1 = steigt nach links "\")
+SLOPE_DIR = {13: 1, 14: -1}
 
 
 class Tilemap:

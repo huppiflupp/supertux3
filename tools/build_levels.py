@@ -46,6 +46,24 @@ class B:
         for y in range(y0, y1 + 1):
             self.put(x, y, ch)
 
+    def hill(self, x0, n, fill="D"):
+        """Grashügel mit 45°-Schrägen: rauf ("/"), n Kacheln Plateau, runter ("\\").
+
+        Die erste "/"-Kachel sitzt eine Reihe über dem Boden (GROUND-1), damit die
+        linke Kante bündig an den flachen Boden anschließt (kein Absatz).
+        """
+        # Schrägen liegen NUR als Rampe oben auf; der bereits vorhandene feste
+        # Boden darunter trägt (kein solides Auffüllen -> keine senkrechte Wand).
+        for i in range(n):                       # Aufstieg ("/")
+            self.put(x0 + i, GROUND - 1 - i, "/")
+        top = GROUND - n                         # Plateau-Reihe (solide bis Boden)
+        for x in range(x0 + n, x0 + n + n):
+            self.put(x, top, "G")
+            for y in range(top + 1, GROUND + 2):
+                self.put(x, y, fill)
+        for i in range(n):                       # Abstieg ("\")
+            self.put(x0 + 2 * n + i, top + i, "\\")
+
     def coins(self, x0, x1, y):
         for x in range(x0, x1 + 1):
             self.ent.append(["coin", x, y])
@@ -168,6 +186,7 @@ def level3():
     b.ground(0, 12)
     b.ground(20, 30); b.ground(40, 52); b.ground(70, 84)
     b.ground(104, 120); b.ground(150, 169)
+    b.hill(2, 3)                               # Grashügel mit Schrägen (Slopes)
     b.e("mplat", 13, 12, 19, 12, 3)
     b.e("mplat", 31, 12, 39, 9, 3)
     b.e("mplat", 53, 11, 69, 11, 3)

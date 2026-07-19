@@ -442,6 +442,20 @@ def gen_tileset():
             p.ellipse([cx - 1, cy - 1, cx + .6, cy + .6], fill=(176, 184, 200, 255))
     tiles.append(p.result())
 
+    # 13: Schräge steigend-rechts "/"  (Gras über Erde)
+    p = Pen(T, T)
+    p.poly([(0, T), (T, 0), (T, T)], fill=(138, 100, 60, 255))       # Erde
+    p.poly([(0, T), (T, 0), (T, 6), (6, T)], fill=(92, 190, 78, 255))  # Grasband
+    p.line([(0, T), (T, 0)], width=1, fill=(120, 214, 96, 255))
+    tiles.append(p.result())
+
+    # 14: Schräge steigend-links "\"
+    p = Pen(T, T)
+    p.poly([(0, 0), (T, T), (0, T)], fill=(138, 100, 60, 255))
+    p.poly([(0, 0), (T, T), (T - 6, T), (0, 6)], fill=(92, 190, 78, 255))
+    p.line([(0, 0), (T, T)], width=1, fill=(120, 214, 96, 255))
+    tiles.append(p.result())
+
     _save(_sheet(tiles, T, T), "tiles", "tileset.png")
 
 

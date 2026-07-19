@@ -4,6 +4,7 @@ from __future__ import annotations
 import pygame
 
 from ..settings import GRAVITY, MAX_FALL_SPEED
+from ..world.tilemap import SLOPE_DIR
 
 
 class Entity:
@@ -40,11 +41,19 @@ class Entity:
         extra_solids: zusätzliche feste Rechtecke (z.B. bewegliche Plattformen).
         """
         # --- horizontal ---
+        was_ground = self.on_ground
         self.x += self.vx * dt
         rect = self.rect
         solids = list(tilemap.solid_rects_around(rect)) + list(extra_solids)
         for solid in solids:
             if rect.colliderect(solid):
+                # Auto-Step: niedrige Kanten (<=10px, z.B. Schräge->Plateau)
+                # hochsteigen statt blockieren, wenn wir am Boden sind.
+                if was_ground and rect.top < solid.top < rect.bottom \
+                        and rect.bottom - solid.top <= 16:
+                    self.y -= (rect.bottom - solid.top)
+                    rect = self.rect
+                    continue
                 if self.vx > 0:
                     rect.right = solid.left
                 elif self.vx < 0:
@@ -66,6 +75,25 @@ class Entity:
                     rect.top = solid.bottom
                 self.y = float(rect.y)
                 self.vy = 0.0
+
+        # --- Schrägen (nicht AABB-solide, per Oberflächenhöhe aufgelöst) ---
+        if self.vy >= 0:
+            rect = self.rect
+            t = tilemap.tile
+            cx = rect.centerx
+            tx = cx // t
+            for ty in range(rect.top // t, rect.bottom // t + 2):
+                d = SLOPE_DIR.get(tilemap.tile_id(tx, ty), 0)
+                if d == 0:
+                    continue
+                localx = cx - tx * t
+                surf = (ty + 1) * t - localx if d > 0 else ty * t + localx
+                surf = max(ty * t, min((ty + 1) * t, surf))
+                if surf - 2 <= rect.bottom <= (ty + 1) * t + 6:
+                    self.y = float(surf - self.h)
+                    self.vy = 0.0
+                    self.on_ground = True
+                    break
 
     # von Unterklassen überschrieben
     def update(self, dt: float, level) -> None:
