@@ -300,6 +300,23 @@ def egypt_music():
     return mix(L, drone, A2, dr)
 
 
+def space_music():
+    # schwebend, träumerisch (a-moll mit weiten Arpeggien + Sinus-Lead)
+    bpm = 96
+    mel = [("A4", 1), ("E5", 1), ("C5", 1), ("D5", 1),
+           ("E5", 1.5), ("C5", .5), ("A4", 2),
+           ("F4", 1), ("C5", 1), ("A4", 1), ("G4", 1),
+           ("E4", 1.5), ("G4", .5), ("A4", 2)]
+    L = lead(mel, bpm, duty=0.5, vol=0.18, vib=10)
+    L = np.concatenate([L, L])
+    twinkle = arp(rep([(["A4", "C5", "E5", "C5"], 2), (["F4", "A4", "C5", "A4"], 2),
+                       (["G4", "B4", "D5", "B4"], 2), (["E4", "G4", "C5", "G4"], 2)], 4),
+                  bpm, vol=0.10, rate=0.25)
+    bs = bass(rep([("A2", 2), ("F2", 2), ("G2", 2), ("E2", 2)], 4), bpm, vol=0.24)
+    bs = np.concatenate([bs, bs]) if len(bs) < len(L) else bs
+    return mix(L, twinkle, bs)
+
+
 def boss_music():
     bpm = 160
     # düster, treibend (a-moll/vermindert)
@@ -384,7 +401,7 @@ def main():
     tracks = {
         "title": title_music, "level1": grass_music, "level2": sunset_music,
         "level3": night_music, "ice": ice_music, "cave": cave_music,
-        "egypt": egypt_music, "boss": boss_music,
+        "egypt": egypt_music, "space": space_music, "boss": boss_music,
     }
     for name, fn in tracks.items():
         write_ogg(AUD / "music" / f"{name}.ogg", fn())

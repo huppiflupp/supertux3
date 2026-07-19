@@ -108,6 +108,46 @@ class Cat(_Walker):
                            self.rect.bottom - img.get_height() - oy))
 
 
+class Alien(_Walker):
+    """Kleiner Alien – Läufer, stampfbar (Weltraum-Welt)."""
+    stompable = True
+    speed = 58.0
+
+    def __init__(self, x, y, assets):
+        super().__init__(x, y, 22, 16)
+        self.walk = Animation(assets.alien, fps=6)
+        self.flat = assets.alien[0]
+        self.facing = -1
+        self.squashed = False
+        self.squash_t = 0.0
+
+    def update(self, dt, level):
+        if self.squashed:
+            self.squash_t -= dt
+            if self.squash_t <= 0:
+                self.remove = True
+            return
+        self._patrol(dt, level)
+        self.walk.update(dt)
+
+    def stomp(self):
+        self.squashed = True
+        self.squash_t = 0.4
+        self.vx = 0.0
+
+    def draw(self, surface, camera):
+        ox, oy = camera.offset
+        if self.squashed:
+            img = pygame.transform.flip(self.flat, False, True)
+            surface.blit(img, (round(self.x) - ox, self.rect.bottom - 6 - oy))
+            return
+        img = self.walk.image
+        if self.facing > 0:
+            img = pygame.transform.flip(img, True, False)
+        surface.blit(img, (round(self.x) - (img.get_width() - self.w) // 2 - ox,
+                           self.rect.bottom - img.get_height() - oy))
+
+
 class Spiky(_Walker):
     """Stachler – kann NICHT gestampft werden (Kontakt verletzt immer)."""
     stompable = False

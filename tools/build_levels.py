@@ -546,11 +546,85 @@ def level18():
     b.dump(LV / "level18.json", "Pyramidengruft", "egypt")
 
 
+# --- Welt Weltraum (Mond "M" / Metallplatte "P") ------------------------
+def level19():
+    b = B(170)
+    pits = [(30, 35), (58, 64), (90, 96), (122, 128), (150, 156)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="M", fill="M"); x = c + 1
+    b.ground(x, 169, ch="M", fill="M")
+    for x0, x1, y in [(22, 27, 11), (68, 73, 10), (100, 106, 11), (134, 139, 10)]:
+        b.plat(x0, x1, y, "P")
+    b.e("mplat", 58, 12, 64, 9, 3); b.e("mplat", 122, 11, 128, 11, 3)
+    b.e("spring", 28, FLOOR); b.e("spring", 86, FLOOR); b.e("spring", 146, FLOOR)
+    for cx in (32, 61, 93, 125, 153):
+        b.arc(cx, 8)
+    b.coins(68, 73, 8); b.coins(100, 106, 9)
+    b.e("growth", 70, 8); b.e("fish", 24, 12)
+    for ex in (16, 46, 80, 112, 158):
+        b.e("alien", ex, FLOOR)
+    b.e("checkpoint", 94, FLOOR); b.e("goal", 166, FLOOR)
+    b.prop("rocket", 8); b.prop("meteor", 52); b.prop("meteor", 108)
+    for t, y in [(20, 2), (80, 1), (140, 2)]:
+        b.prop("planet", t, y)
+    b.dump(LV / "level19.json", "Startrampe", "space")
+
+
+def level20():
+    b = B(180)
+    pits = [(24, 30), (50, 57), (80, 87), (110, 117), (142, 149), (164, 170)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="M", fill="M"); x = c + 1
+    b.ground(x, 179, ch="M", fill="M")
+    for x0, x1, y in [(34, 40, 10), (66, 72, 9), (96, 102, 11), (126, 132, 9)]:
+        b.plat(x0, x1, y, "P")
+    b.e("mplat", 50, 12, 57, 9, 3); b.e("mplat", 110, 11, 117, 11, 3)
+    b.e("box", 36, 8); b.e("box", 37, 8)
+    b.e("spring", 22, FLOOR); b.e("spring", 78, FLOOR); b.e("spring", 140, FLOOR)
+    for cx in (26, 53, 83, 113, 145):
+        b.arc(cx, 8)
+    b.e("growth", 68, 7); b.e("fishrain", 100, 8)
+    for ex in (16, 62, 120, 174):
+        b.e("alien", ex, FLOOR)
+    for ex in (44, 90, 150):
+        b.e("shooter", ex, FLOOR)
+    b.e("flyer", 70, 6, 6); b.e("flyer", 130, 6, 7)
+    b.e("checkpoint", 86, FLOOR); b.e("goal", 176, FLOOR)
+    b.prop("rocket", 12); b.prop("planet", 60, 1); b.prop("meteor", 156)
+    b.dump(LV / "level20.json", "Mondbasis", "space")
+
+
+def level21():
+    b = B(185)
+    b.ground(0, 12, ch="M", fill="M")
+    b.ground(150, 184, ch="M", fill="M")
+    for x0, x1 in [(24, 30), (46, 52), (74, 82), (108, 116), (132, 140)]:
+        b.plat(x0, x1, 12, "P")
+    b.e("mplat", 13, 12, 23, 12, 3)
+    b.e("mplat", 31, 12, 45, 9, 3)
+    b.e("mplat", 53, 11, 73, 11, 3)
+    b.e("mplat", 83, 10, 107, 13, 3)
+    b.e("mplat", 117, 12, 149, 12, 4)
+    for cx in (27, 49, 78, 112, 136):
+        b.arc(cx, 9)
+    b.e("growth", 50, 11); b.e("fish", 6, 12)
+    for ex in (26, 78, 158, 178):
+        b.e("alien", ex, FLOOR)
+    b.e("flyer", 40, 6, 6); b.e("flyer", 96, 6, 8); b.e("flyer", 140, 8, 6)
+    b.e("spring", 8, FLOOR); b.e("spring", 176, FLOOR)
+    b.e("checkpoint", 78, FLOOR); b.e("goal", 181, FLOOR)
+    for t, y in [(20, 1), (90, 2), (150, 1)]:
+        b.prop("planet", t, y)
+    b.dump(LV / "level21.json", "Sternenmeer", "space")
+
+
 def main():
     print("Baue Level ->", LV)
     for fn in (level1, level2, level3, level4, level5, level6, level7, level8,
                level9, level10, level11, level12, level13, level14, level15,
-               level16, level17, level18):
+               level16, level17, level18, level19, level20, level21):
         fn()
     print("Fertig.")
 

@@ -397,6 +397,27 @@ def gen_tileset():
     p.line([(24, 16), (24, T)], width=1, fill=(150, 120, 74, 255))
     tiles.append(p.result())
 
+    # 9: Mondgestein (Weltraum)
+    p = Pen(T, T)
+    p.rect([0, 5, T, T], fill=(150, 152, 164, 255))
+    _pebbles(p, (0, 6, T, T), [(128, 130, 144, 255), (176, 178, 190, 255)], 41, 70)
+    p.rect([0, 0, T, 6], fill=(178, 180, 192, 255))
+    for cx, cy, r in [(9, 16, 3), (22, 22, 2.4), (26, 11, 2)]:   # Krater
+        p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(120, 122, 136, 255))
+        p.ellipse([cx - r + 1, cy - r + 1, cx + r, cy + r], fill=(160, 162, 176, 255))
+    tiles.append(p.result())
+
+    # 10: Metallplatte (Raumstation)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(78, 92, 120, 255))
+    p.rect([2, 2, T - 3, T - 3], fill=(96, 112, 146, 255))
+    p.line([(0, 16), (T, 16)], width=1, fill=(56, 68, 92, 255))
+    p.line([(16, 0), (16, T)], width=1, fill=(56, 68, 92, 255))
+    for cx, cy in ((5, 5), (27, 5), (5, 27), (27, 27)):
+        p.ellipse([cx - 1.6, cy - 1.6, cx + 1.6, cy + 1.6], fill=(150, 200, 240, 255))
+    p.line([(3, 3), (12, 3)], width=1, fill=(140, 170, 210, 255))
+    tiles.append(p.result())
+
     _save(_sheet(tiles, T, T), "tiles", "tileset.png")
 
 
@@ -981,11 +1002,115 @@ def gen_cat():
     _save(_sheet([draw_cat(0), draw_cat(1)], 30, 24), "enemies", "cat.png")
 
 
+# =========================================================================
+#  Weltraum-Welt: Hintergrund, Rakete/Planet/Meteor, Alien-Gegner
+# =========================================================================
+def gen_space_bg():
+    import random as _r
+    W, Hh = 1536, 768
+    img = Image.new("RGB", (W, Hh))
+    d = ImageDraw.Draw(img)
+    top, bot = (10, 10, 34), (34, 22, 62)
+    for y in range(Hh):
+        f = y / (Hh - 1)
+        d.line([(0, y), (W, y)], fill=tuple(int(top[i] + (bot[i] - top[i]) * f) for i in range(3)))
+    rng = _r.Random(0x5ACE)
+    # Nebel
+    for _ in range(5):
+        cx, cy = rng.randint(0, W), rng.randint(0, Hh)
+        rr = rng.randint(120, 260)
+        ov = Image.new("RGBA", (rr * 2, rr * 2), (0, 0, 0, 0))
+        od = ImageDraw.Draw(ov)
+        col = rng.choice([(90, 60, 160), (40, 80, 160), (150, 60, 130)])
+        od.ellipse([0, 0, rr * 2, rr * 2], fill=(*col, 26))
+        img.paste(Image.alpha_composite(img.crop((cx - rr, cy - rr, cx + rr, cy + rr)).convert("RGBA"), ov).convert("RGB"),
+                  (cx - rr, cy - rr))
+    # Sterne
+    for _ in range(260):
+        x, y = rng.randint(0, W), rng.randint(0, Hh)
+        s = rng.choice([1, 1, 1, 2])
+        b = rng.randint(160, 255)
+        d.ellipse([x, y, x + s, y + s], fill=(b, b, min(255, b + 20)))
+    # Großer Ringplanet
+    px, py, pr = int(W * 0.22), int(Hh * 0.34), 150
+    d.ellipse([px - pr, py - pr, px + pr, py + pr], fill=(120, 96, 200))
+    d.ellipse([px - pr, py - pr, px + pr, py + pr], outline=(150, 130, 220), width=3)
+    d.ellipse([px - pr + 30, py - pr + 24, px + pr - 60, py + pr - 90], fill=(150, 128, 220))
+    d.ellipse([px - pr - 60, py - 24, px + pr + 60, py + 40], outline=(200, 180, 240), width=6)  # Ring
+    # Kleine ferne Rakete
+    rx, ry = int(W * 0.8), int(Hh * 0.5)
+    d.polygon([(rx, ry - 40), (rx - 10, ry), (rx + 10, ry)], fill=(220, 90, 90))
+    d.polygon([(rx, ry - 40), (rx + 10, ry), (rx + 3, ry)], fill=(180, 70, 74))
+    d.ellipse([rx - 4, ry - 26, rx + 4, ry - 18], fill=(150, 210, 240))
+    d.polygon([(rx - 6, ry), (rx - 4, ry + 16), (rx + 4, ry + 16), (rx + 6, ry)], fill=(255, 180, 60))
+    img.save(IMG / "background" / "space_bg.png")
+    print("  background/space_bg.png  (1536, 768)")
+
+
+def gen_space_props():
+    # Rakete (48x96)
+    p = Pen(48, 96)
+    RED = (222, 78, 80, 255); RED_LO = (172, 50, 56, 255); MET = (208, 214, 226, 255)
+    p.ellipse([14, 2, 34, 30], fill=RED)                 # Spitze
+    p.rounded([14, 20, 34, 82], 6, fill=MET)             # Rumpf
+    p.rounded([16, 22, 26, 80], 4, fill=(232, 238, 248, 255))
+    p.ellipse([19, 34, 29, 46], fill=(120, 200, 240, 255))  # Fenster
+    p.ellipse([19, 34, 29, 46], outline=(70, 90, 130, 255))
+    p.poly([(14, 60), (2, 86), (14, 82)], fill=RED)      # Flossen
+    p.poly([(34, 60), (46, 86), (34, 82)], fill=RED_LO)
+    p.rounded([16, 80, 32, 88], 3, fill=(90, 100, 120, 255))
+    p.poly([(18, 88), (24, 96), (30, 88)], fill=(255, 180, 60, 255))   # Flamme
+    _save(p.result(), "props", "rocket.png")
+
+    # Planet (64x64)
+    p = Pen(64, 64)
+    p.ellipse([6, 8, 58, 60], fill=(96, 150, 210, 255))
+    p.ellipse([10, 12, 44, 44], fill=(120, 176, 232, 255))
+    p.ellipse([30, 34, 52, 52], fill=(78, 128, 190, 255))
+    p.ellipse([1, 26, 63, 42], outline=(220, 210, 160, 255), width=3)  # Ring
+    _save(p.result(), "props", "planet.png")
+
+    # Meteor (28x24)
+    p = Pen(28, 24)
+    p.ellipse([2, 3, 24, 22], fill=(110, 100, 96, 255))
+    p.ellipse([3, 4, 23, 20], fill=(140, 130, 122, 255))
+    for cx, cy, r in [(9, 9, 2.5), (17, 14, 2), (13, 17, 1.6)]:
+        p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(96, 88, 84, 255))
+    _save(p.result(), "props", "meteor.png")
+
+
+def draw_alien(step: int) -> Image.Image:
+    p = Pen(28, 24)
+    GRN = (120, 210, 110, 255); GRN_LO = (86, 170, 84, 255)
+    # Antenne
+    ay = 2 if step == 0 else 4
+    p.line([(14, 7), (14, ay)], width=1.4, fill=GRN_LO)
+    p.ellipse([12, ay - 2, 16, ay + 2], fill=(255, 120, 120, 255))
+    p.ellipse([5, 6, 23, 20], fill=OUT)
+    p.ellipse([6, 7, 22, 19], fill=GRN)                   # Kopf/Körper
+    p.ellipse([8, 14, 20, 20], fill=GRN_LO)
+    p.ellipse([9, 8, 19, 15], fill=WHITE)                 # großes Auge
+    p.ellipse([12, 9, 16, 14], fill=PUP)
+    p.ellipse([13, 10, 14.5, 11.5], fill=WHITE)
+    fo = 2 if step == 0 else -2
+    for cx in (10, 18):
+        off = fo if cx == 18 else -fo
+        p.rect([cx + off, 19, cx + 2 + off, 24], fill=GRN_LO)
+    return p.result()
+
+
+def gen_alien():
+    _save(_sheet([draw_alien(0), draw_alien(1)], 28, 24), "enemies", "alien.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_egypt_bg()
     gen_egypt_props()
     gen_cat()
+    gen_space_bg()
+    gen_space_props()
+    gen_alien()
     gen_tileset()
     gen_pengu()
     gen_pengu_big()
