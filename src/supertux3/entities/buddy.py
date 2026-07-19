@@ -63,6 +63,91 @@ class GiraffeItem(Entity):
         surface.blit(self.img, (round(self.x) - ox, round(self.y) - oy))
 
 
+FRIEND_DURATION = 20.0     # Sekunden Begleit-Freund
+FRIEND_RANGE = 220.0       # Reichweite, in der der Freund Gegner beschießt
+
+
+class FriendItem(Entity):
+    """Schwebendes Freund-Powerup: ruft einen kämpfenden Begleiter."""
+
+    def __init__(self, x, y, assets):
+        img = assets.friend
+        super().__init__(x, y, img.get_width(), img.get_height())
+        self.img = img
+        self.base_y = float(y)
+        self.t = (x * 0.1) % (math.pi * 2)
+
+    def update(self, dt, level):
+        self.t += dt * 2.5
+        self.y = self.base_y + math.sin(self.t) * 4.0
+
+    def draw(self, surface, camera):
+        ox, oy = camera.offset
+        surface.blit(self.img, (round(self.x) - ox, round(self.y) - oy))
+
+
+class Friend(Entity):
+    """Begleiter-Pinguin: folgt Pengu und wirft Fische auf nahe Gegner."""
+
+    def __init__(self, player, assets):
+        img = assets.friend
+        super().__init__(player.x, player.y, img.get_width(), img.get_height())
+        self.img = img
+        self.player = player
+        self.assets = assets
+        self.life = FRIEND_DURATION
+        self.cd = 0.6
+        self.t = 0.0
+        self.remove = False
+
+    def _nearest_enemy(self, level):
+        best, bd = None, FRIEND_RANGE
+        for e in level.enemies:
+            if getattr(e, "squashed", False) or getattr(e, "remove", False):
+                continue
+            d = math.hypot(e.cx - self.cx, e.cy - self.cy)
+            if d < bd:
+                best, bd = e, d
+        return best
+
+    def update(self, dt, level):
+        self.t += dt
+        self.life -= dt
+        if self.life <= 0:
+            self.remove = True
+            return
+        p = self.player
+        # hinter Pengu herlaufen (leichtes Wippen)
+        side = -1 if p.facing >= 0 else 1
+        self.x = p.cx + side * (TILE * 1.5) - self.w / 2
+        self.y = (p.y + p.h) - self.h - abs(math.sin(self.t * 5)) * 3
+        self.facing = -side
+        # nahe Gegner beschießen (Fisch in level.friendly -> plättet Gegner)
+        self.cd = max(0.0, self.cd - dt)
+        if self.cd <= 0:
+            e = self._nearest_enemy(level)
+            if e is not None:
+                from .projectiles import Projectile
+                d = 1 if e.cx > self.cx else -1
+                fish = self.assets.fish
+                level.friendly.append(
+                    Projectile(self.cx, self.cy - 4, d * 300.0, -120.0,
+                               fish, grav=700.0, life=2.0, spin=True))
+                self.facing = d
+                self.cd = 1.1
+                level.game.audio.play("throw")
+
+    def draw(self, surface, camera):
+        ox, oy = camera.offset
+        img = self.img
+        if self.facing < 0:
+            img = pygame.transform.flip(img, True, False)
+        # zeitliches Ende blinken
+        if self.life < 3.0 and int(self.life * 10) % 2 == 0:
+            return
+        surface.blit(img, (round(self.x) - ox, round(self.y) - oy))
+
+
 class Giraffe(Entity):
     """Begleiter, der Pengu folgt und über Lücken eine Hals-Brücke bildet."""
 

@@ -181,6 +181,7 @@ def level3():
         b.e("snowball", ex, FLOOR)
     b.e("flyer", 35, 7, 6); b.e("flyer", 90, 6, 8); b.e("flyer", 135, 8, 6)
     b.e("spring", 10, FLOOR); b.e("spring", 160, FLOOR)
+    b.e("friend", 8, 12)                       # kämpfender Freund-Begleiter
     b.e("checkpoint", 78, FLOOR); b.e("goal", 166, FLOOR)
     for t, y in [(10, 1), (44, 2), (90, 1), (130, 2)]:
         b.prop("cloud", t, y)

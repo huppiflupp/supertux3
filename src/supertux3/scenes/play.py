@@ -144,6 +144,11 @@ class PlayScene(Scene):
                 fi.update(dt, lvl)
             for ri in lvl.rain_items:
                 ri.update(dt, lvl)
+            for fi2 in lvl.friend_items:
+                fi2.update(dt, lvl)
+            for fr2 in lvl.friends:
+                fr2.update(dt, lvl)
+            lvl.friends = [f for f in lvl.friends if not getattr(f, "remove", False)]
             for ti in lvl.turtle_items:
                 ti.update(dt, lvl)
             for gi in lvl.giraffe_items:
@@ -270,6 +275,19 @@ class PlayScene(Scene):
         lvl.rain_items = rem
 
         # Schildkröte -> Schutzschild
+        # Kämpfender Freund
+        rem = []
+        for fi2 in lvl.friend_items:
+            if prect.colliderect(fi2.rect):
+                from ..entities.buddy import Friend
+                lvl.friends.append(Friend(p, self.game.assets))
+                self.particles.sparkle(fi2.cx, fi2.cy, color=(150, 245, 160))
+                self.particles.text(fi2.cx, fi2.y, "Freund!", (150, 245, 160), self.font)
+                self.game.audio.play("grow")
+            else:
+                rem.append(fi2)
+        lvl.friend_items = rem
+
         rem = []
         for ti in lvl.turtle_items:
             if prect.colliderect(ti.rect):
@@ -554,12 +572,16 @@ class PlayScene(Scene):
             ti.draw(surface, cam)
         for gi in self.level.giraffe_items:
             gi.draw(surface, cam)
+        for fi2 in self.level.friend_items:
+            fi2.draw(surface, cam)
         for st in self.level.stars:
             st.draw(surface, cam)
         if self.level.goal:
             self.level.goal.draw(surface, cam)
         for g in self.level.giraffes:
             g.draw(surface, cam)
+        for fr2 in self.level.friends:
+            fr2.draw(surface, cam)
         for e in self.level.enemies:
             e.draw(surface, cam)
         for pr in self.level.projectiles:

@@ -1301,8 +1301,30 @@ def gen_robot():
     _save(_sheet([draw_robot(0), draw_robot(1)], 30, 30), "enemies", "robot.png")
 
 
+def gen_friend():
+    # kleiner Begleiter-Pinguin (grüner Schal) – wirft Fische auf Gegner
+    p = Pen(28, 34)
+    GSC = (86, 190, 96, 255); GSC_LO = (56, 150, 70, 255)
+    p.ellipse([2, 6, 7, 18], fill=BODY)                 # Flossen
+    p.ellipse([21, 6, 26, 18], fill=BODY)
+    p.ellipse([3, 2, 25, 32], fill=OUT)
+    p.ellipse([4, 3, 24, 31], fill=BODY)
+    p.ellipse([7, 4, 17, 13], fill=BODY_HI)
+    p.ellipse([8, 12, 21, 30], fill=BELLY)              # Bauch
+    for ex in (11, 17):
+        p.ellipse([ex - 2, 7, ex + 2, 12], fill=WHITE)
+        p.ellipse([ex - .5, 8.5, ex + 1.5, 11.5], fill=PUP)
+        p.ellipse([ex, 9, ex + .8, 10], fill=WHITE)
+    p.poly([(13, 11), (18, 13), (13, 15)], fill=BEAK)   # Schnabel
+    p.rounded([5, 12, 23, 15], 2, fill=GSC)             # grüner Schal
+    p.poly([(20, 14), (24, 21), (21, 22), (18, 15)], fill=GSC_LO)
+    p.ellipse([9, 31, 14, 34], fill=FOOT); p.ellipse([15, 31, 20, 34], fill=FOOT)
+    _save(p.result(), "collectibles", "friend.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
+    gen_friend()
     gen_egypt_bg()
     gen_egypt_props()
     gen_cat()

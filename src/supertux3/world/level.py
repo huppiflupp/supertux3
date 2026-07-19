@@ -27,7 +27,7 @@ from ..settings import TILE, LEVEL_DIR, USER_LEVEL_DIR
 from ..entities.player import Player, FORM
 from ..entities.collectible import Coin, GrowItem, Goal, Star, FishItem, FishRainItem
 from ..entities.platform import MovingPlatform, Spring, Checkpoint, Box
-from ..entities.buddy import TurtleItem, GiraffeItem, Giraffe
+from ..entities.buddy import TurtleItem, GiraffeItem, Giraffe, FriendItem, Friend
 from ..entities.enemy import Snowball, Spiky, Flyer, Shooter, Cat, Alien, Robot
 from ..entities.boss import Boss
 
@@ -76,6 +76,8 @@ class Level:
         self.turtle_items: list[TurtleItem] = []
         self.giraffe_items: list[GiraffeItem] = []
         self.giraffes: list[Giraffe] = []       # aktive Giraffen-Begleiter
+        self.friend_items: list[FriendItem] = []
+        self.friends: list[Friend] = []         # aktive kämpfende Freunde
         self.boss = None
         self.goal: Goal | None = None
 
@@ -128,6 +130,10 @@ class Level:
                                                     e[2] * TILE + (TILE - th) // 2, A))
             elif k == "giraffe":
                 self.giraffe_items.append(GiraffeItem(e[1] * TILE, e[2] * TILE, A))
+            elif k == "friend":
+                fw = A.friend.get_width()
+                self.friend_items.append(FriendItem(e[1] * TILE + (TILE - fw) // 2,
+                                                    e[2] * TILE, A))
             elif k == "spring":
                 self.springs.append(Spring(e[1] * TILE, (e[2] + 1) * TILE, A))
             elif k == "checkpoint":

@@ -96,6 +96,7 @@ class Assets:
         self.fish = load_image(IMAGE_DIR / "collectibles" / "fish.png")
         self.turtle = load_image(IMAGE_DIR / "collectibles" / "turtle.png")
         self.giraffe = load_image(IMAGE_DIR / "collectibles" / "giraffe.png")
+        self.friend = load_image(IMAGE_DIR / "collectibles" / "friend.png")
         self.shield = load_image(IMAGE_DIR / "collectibles" / "shield.png")
         self.plant = slice_strip(load_image(IMAGE_DIR / "enemies" / "plant.png"), 28, 28)
         self.fireball = load_image(IMAGE_DIR / "enemies" / "fireball.png")
