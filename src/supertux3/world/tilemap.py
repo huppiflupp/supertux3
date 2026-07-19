@@ -20,8 +20,10 @@ CHAR_TO_TILE: dict[str, int] = {
     "#": 4,   # Hartblock
     "S": 5,   # Stein / Fels
     "I": 6,   # Eis (etwas rutschig – optional)
+    "A": 7,   # Sand-Oberseite (Wüste)
+    "W": 8,   # Sandstein (Blöcke / Pyramiden)
 }
-SOLID_IDS = {1, 2, 3, 4, 5, 6}
+SOLID_IDS = {1, 2, 3, 4, 5, 6, 7, 8}
 
 
 class Tilemap:

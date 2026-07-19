@@ -366,6 +366,27 @@ def gen_tileset():
     p.line([(8, 22), (14, 28)], width=1, fill=(150, 206, 232, 255))
     tiles.append(p.result())
 
+    # 7: Sand-Oberseite (Wüste)
+    p = Pen(T, T)
+    p.rect([0, 6, T, T], fill=(214, 176, 110, 255))
+    _pebbles(p, (0, 8, T, T), [(198, 158, 92, 255), (228, 194, 132, 255)], 21, 70)
+    p.rect([0, 0, T, 7], fill=(238, 208, 138, 255))
+    p.line([(0, 1), (T, 1)], width=1, fill=(250, 226, 168, 255))
+    for x in range(2, T, 9):        # sanfte Wellenkämme
+        p.line([(x, 4), (x + 4, 3), (x + 8, 4)], width=1, fill=(226, 194, 128, 255))
+    tiles.append(p.result())
+
+    # 8: Sandstein (Blöcke / Pyramiden)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(198, 162, 104, 255))
+    _pebbles(p, (0, 0, T, T), [(182, 146, 90, 255), (214, 180, 122, 255)], 33, 50)
+    p.line([(0, 0), (T, 0)], width=1, fill=(226, 196, 138, 255))
+    p.line([(0, 16), (T, 16)], width=1, fill=(150, 120, 74, 255))
+    p.line([(16, 0), (16, 16)], width=1, fill=(150, 120, 74, 255))
+    p.line([(8, 16), (8, T)], width=1, fill=(150, 120, 74, 255))
+    p.line([(24, 16), (24, T)], width=1, fill=(150, 120, 74, 255))
+    tiles.append(p.result())
+
     _save(_sheet(tiles, T, T), "tiles", "tileset.png")
 
 
