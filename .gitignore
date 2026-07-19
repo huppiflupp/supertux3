@@ -8,3 +8,7 @@ __pycache__/
 /tools/comfyui/ComfyUI/output/
 *.log
 .claude/
+build-dir/
+repo/
+.flatpak-builder/
+dist/

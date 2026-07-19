@@ -5,11 +5,12 @@
 # vollständig offline reproduzierbaren Build die Wheels vendorn (flatpak-pip-generator).
 app-id: org.supertux3.SuperTux3
 runtime: org.freedesktop.Platform
-runtime-version: '23.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 command: supertux3
 finish-args:
-  - --socket=x11
+  - --socket=wayland
+  - --socket=fallback-x11
   - --socket=pulseaudio
   - --device=dri
   - --device=all           # Gamepads
@@ -25,7 +26,7 @@ modules:
   - name: supertux3
     buildsystem: simple
     build-commands:
-      - install -d /app/share/supertux3/src
+      - install -d /app/share/supertux3/src /app/bin
       - cp -r src/supertux3 /app/share/supertux3/src/
       - cp -r assets levels /app/share/supertux3/
       - sed 's|@DATADIR@|/app/share/supertux3|g' packaging/supertux3.in > /app/bin/supertux3

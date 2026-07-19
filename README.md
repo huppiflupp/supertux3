@@ -33,7 +33,12 @@ bash packaging/install-user.sh     # ohne Root: Menüeintrag "SuperTux3" + Icon
 Danach startet „SuperTux3" aus dem Anwendungsmenü (oder per `supertux3` im Terminal).
 
 - **Systemweit:** `sudo make install`
-- **Flatpak / RPM / DEB** und **Raspberry Pi 400**: siehe
+- **Flatpak-Bundle (1 Datei, ideal für USB-Stick / andere Rechner):** die
+  `supertux3-v1.0.flatpak` vom [Release](https://github.com/huppiflupp/supertux3/releases/tag/v1.0)
+  laden, dann `flatpak install --user supertux3-v1.0.flatpak` und
+  `flatpak run org.supertux3.SuperTux3`. Bauen/Details:
+  [docs/packaging.md](docs/packaging.md).
+- **RPM / DEB** und **Raspberry Pi 400**: siehe
   [docs/packaging.md](docs/packaging.md) und [docs/pi400.md](docs/pi400.md).
 
 Zum Spielen genügt Python 3.10+ und `pygame` (empfohlen `pygame-ce`).

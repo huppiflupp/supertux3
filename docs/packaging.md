@@ -34,14 +34,37 @@ cp -r packaging/debian debian
 dpkg-buildpackage -us -uc -b
 ```
 
-## Flatpak
+## Flatpak (empfohlen zum Weitergeben – 1 Datei, keine Symlinks)
+
+Ein Flatpak-**Bundle** ist eine einzelne `.flatpak`-Datei, die man auf einen
+USB-Stick kopieren und auf jedem Linux-Rechner mit Flatpak installieren kann –
+ohne Symlink-Probleme (venv/Worktrees etc. sind nicht enthalten).
+
+### Bauen
 ```bash
-flatpak-builder --user --install --force-clean build-dir \
-  packaging/flatpak/org.supertux3.SuperTux3.yaml
-flatpak run org.supertux3.SuperTux3
+# einmalig: Builder (als Flatpak, kein Root) + Runtime/SDK
+flatpak install --user -y flathub org.flatpak.Builder \
+  org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
+
+# bauen (der pip-Schritt lädt pygame-ce -> Netz nötig) und Bundle exportieren
+flatpak run org.flatpak.Builder --user --force-clean --disable-rofiles-fuse \
+  --repo=repo build-dir packaging/flatpak/org.supertux3.SuperTux3.yaml
+mkdir -p dist
+flatpak build-bundle repo dist/supertux3-v1.0.flatpak org.supertux3.SuperTux3
 ```
-Der pip-Schritt braucht beim Bauen Netz (pygame-ce-Wheel). Für einen
-offline-reproduzierbaren Build die Wheels mit `flatpak-pip-generator` vendorn.
+Ergebnis: `dist/supertux3-v1.0.flatpak` (~31 MB). Auch als Download am
+GitHub-Release v1.0.
+
+### Installieren & Spielen (auf USB-Stick kopieren, dann am Zielrechner)
+```bash
+flatpak install --user supertux3-v1.0.flatpak    # kein Root nötig
+flatpak run org.supertux3.SuperTux3              # oder Menüeintrag "SuperTux3"
+```
+Voraussetzung am Zielrechner: Flatpak + die Freedesktop-Runtime 25.08 (wird bei
+`flatpak install` bei Bedarf automatisch aus Flathub nachgeladen).
+
+> Offline-reproduzierbar: Für einen Build ganz ohne Netz die pygame-ce-Wheels
+> mit `flatpak-pip-generator` vendorn.
 
 ## pip (Entwicklung)
 ```bash
