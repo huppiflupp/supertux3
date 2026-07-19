@@ -63,6 +63,25 @@ flatpak run org.supertux3.SuperTux3              # oder Menüeintrag "SuperTux3"
 Voraussetzung am Zielrechner: Flatpak + die Freedesktop-Runtime 25.08 (wird bei
 `flatpak install` bei Bedarf automatisch aus Flathub nachgeladen).
 
+### Ziel-Rechner OHNE Internet (Runtime fehlt)
+Ist der Zielrechner **offline** und hat die Runtime noch nicht, schlägt die
+App-Installation fehl („runtime … not installed"). Dann zusätzlich die
+**Runtime-Bundles** mitkopieren (auch am GitHub-Release v1.0):
+
+- `org.freedesktop.Platform-25.08.flatpak`  (Pflicht, ~168 MB)
+- `org.freedesktop.Platform.GL.default-25.08.flatpak`  (empfohlen für flüssige Grafik, ~93 MB)
+
+Alle drei `.flatpak`-Dateien auf den USB-Stick, dann am Zielrechner **in dieser
+Reihenfolge** (Runtime zuerst, App zuletzt):
+```bash
+flatpak install --user ./org.freedesktop.Platform-25.08.flatpak
+flatpak install --user ./org.freedesktop.Platform.GL.default-25.08.flatpak   # optional
+flatpak install --user ./supertux3-v1.0.flatpak
+flatpak run org.supertux3.SuperTux3
+```
+Damit ist **kein Internet** nötig. (Eine evtl. Meldung zur fehlenden
+`.Locale`-Erweiterung kann ignoriert werden – das Spiel braucht sie nicht.)
+
 > Offline-reproduzierbar: Für einen Build ganz ohne Netz die pygame-ce-Wheels
 > mit `flatpak-pip-generator` vendorn.
 
