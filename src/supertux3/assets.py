@@ -84,10 +84,12 @@ class Assets:
 
         for name in ("bush", "cloud", "tree", "flag",
                      "pyramid", "sphinx", "palm", "cactus",
-                     "rocket", "planet", "meteor"):
+                     "rocket", "planet", "meteor",
+                     "skyscraper", "crane", "streetlamp", "barrier"):
             self.props[name] = load_image(IMAGE_DIR / "props" / f"{name}.png")
         self.cat = slice_strip(load_image(IMAGE_DIR / "enemies" / "cat.png"), 30, 24)
         self.alien = slice_strip(load_image(IMAGE_DIR / "enemies" / "alien.png"), 28, 24)
+        self.robot = slice_strip(load_image(IMAGE_DIR / "enemies" / "robot.png"), 30, 30)
 
         self.item_grow = load_image(IMAGE_DIR / "collectibles" / "grow.png")
         self.star = load_image(IMAGE_DIR / "collectibles" / "star.png")

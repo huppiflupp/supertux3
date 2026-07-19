@@ -28,7 +28,7 @@ from ..entities.player import Player, FORM
 from ..entities.collectible import Coin, GrowItem, Goal, Star, FishItem, FishRainItem
 from ..entities.platform import MovingPlatform, Spring, Checkpoint, Box
 from ..entities.buddy import TurtleItem, GiraffeItem, Giraffe
-from ..entities.enemy import Snowball, Spiky, Flyer, Shooter, Cat, Alien
+from ..entities.enemy import Snowball, Spiky, Flyer, Shooter, Cat, Alien, Robot
 from ..entities.boss import Boss
 
 # Theme -> (Hintergrund, Musik)
@@ -40,6 +40,7 @@ THEMES = {
     "cave":   ("cave.png", "cave.ogg"),
     "egypt":  ("egypt_desert.png", "egypt.ogg"),
     "space":  ("space_bg.png", "space.ogg"),
+    "city":   ("city_bg.png", "city.ogg"),
 }
 
 
@@ -101,6 +102,9 @@ class Level:
                 self.enemies.append(s)
             elif k == "alien":
                 s = Alien(e[1] * TILE, 0, A); s.y = (e[2] + 1) * TILE - s.h
+                self.enemies.append(s)
+            elif k == "robot":
+                s = Robot(e[1] * TILE, 0, A); s.y = (e[2] + 1) * TILE - s.h
                 self.enemies.append(s)
             elif k == "flyer":
                 patrol = e[3] if len(e) > 3 else 6

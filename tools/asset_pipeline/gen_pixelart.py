@@ -418,6 +418,30 @@ def gen_tileset():
     p.line([(3, 3), (12, 3)], width=1, fill=(140, 170, 210, 255))
     tiles.append(p.result())
 
+    # 11: Asphalt / Straße (Stadt) – Oberkante mit Mittelstreifen
+    p = Pen(T, T)
+    p.rect([0, 6, T, T], fill=(58, 60, 68, 255))
+    _pebbles(p, (0, 8, T, T), [(48, 50, 58, 255), (74, 76, 84, 255)], 61, 80)
+    p.rect([0, 0, T, 7], fill=(74, 76, 84, 255))
+    p.line([(0, 1), (T, 1)], width=1, fill=(102, 104, 112, 255))
+    p.rect([13, 3, 19, 12], fill=(216, 190, 72, 255))     # gelbe Fahrbahnmarkierung
+    p.rect([13, 22, 19, 31], fill=(216, 190, 72, 255))
+    tiles.append(p.result())
+
+    # 12: Beton / Stahlträger (Baustelle)
+    p = Pen(T, T)
+    p.rect([0, 0, T, T], fill=(150, 152, 158, 255))       # Beton
+    _pebbles(p, (0, 0, T, T), [(134, 136, 142, 255), (170, 172, 178, 255)], 62, 44)
+    p.rect([2, 0, 30, 5], fill=(120, 128, 146, 255))      # H-Träger: oberer Flansch
+    p.rect([2, 27, 30, 32], fill=(120, 128, 146, 255))    # unterer Flansch
+    p.rect([13, 5, 19, 27], fill=(138, 146, 164, 255))    # Steg
+    p.line([(13, 5), (13, 27)], width=1, fill=(168, 176, 192, 255))
+    for cy in (2, 29):
+        for cx in (8, 24):
+            p.ellipse([cx - 1.5, cy - 1.5, cx + 1.5, cy + 1.5], fill=(92, 98, 112, 255))
+            p.ellipse([cx - 1, cy - 1, cx + .6, cy + .6], fill=(176, 184, 200, 255))
+    tiles.append(p.result())
+
     _save(_sheet(tiles, T, T), "tiles", "tileset.png")
 
 
@@ -1103,6 +1127,180 @@ def gen_alien():
     _save(_sheet([draw_alien(0), draw_alien(1)], 28, 24), "enemies", "alien.png")
 
 
+# =========================================================================
+#  Großstadt-Welt: Hintergrund, Wolkenkratzer/Kran/Laterne/Absperrung,
+#  Roboter-Gegner
+# =========================================================================
+def gen_city_bg():
+    import random as _r
+    W, Hh = 1536, 768
+    img = Image.new("RGB", (W, Hh))
+    d = ImageDraw.Draw(img)
+    # Dämmerungshimmel: violett oben -> warm-orange am Horizont
+    top, mid, bot = (26, 24, 62), (96, 62, 116), (238, 146, 96)
+    for y in range(Hh):
+        f = y / (Hh - 1)
+        if f < 0.62:
+            g = f / 0.62
+            col = tuple(int(top[i] + (mid[i] - top[i]) * g) for i in range(3))
+        else:
+            g = (f - 0.62) / 0.38
+            col = tuple(int(mid[i] + (bot[i] - mid[i]) * g) for i in range(3))
+        d.line([(0, y), (W, y)], fill=col)
+    # Mond mit weichem Schein
+    mx, my = int(W * 0.80), int(Hh * 0.20)
+    for r, c in [(104, (66, 54, 100)), (86, (108, 92, 138)), (70, (168, 158, 190)),
+                 (56, (240, 238, 246)), (52, (252, 250, 248))]:
+        d.ellipse([mx - r, my - r, mx + r, my + r], fill=c)
+    for cx, cy, cr in [(mx - 18, my - 10, 9), (mx + 14, my + 10, 6), (mx + 6, my - 20, 5)]:
+        d.ellipse([cx - cr, cy - cr, cx + cr, cy + cr], fill=(224, 220, 232))
+    hor = int(Hh * 0.70)
+
+    def skyline(base, col, bw_rng, bh_rng, gap_rng, win, lit_p, seed, jitter=0):
+        r2 = _r.Random(seed)
+        x = -20
+        while x < W + 20:
+            bw = r2.randint(*bw_rng)
+            bh = r2.randint(*bh_rng)
+            top_y = base - bh + r2.randint(-jitter, jitter)
+            d.rectangle([x, top_y, x + bw, Hh], fill=col)
+            if win is not None:
+                for wy in range(top_y + 10, base - 6, 14):
+                    for wx in range(x + 7, x + bw - 6, 12):
+                        if r2.random() < lit_p:
+                            d.rectangle([wx, wy, wx + 6, wy + 8], fill=win)
+            x += bw + r2.randint(*gap_rng)
+
+    # ferne Schicht (dunstig, kaum beleuchtet)
+    skyline(hor - 40, (58, 52, 92), (70, 130), (120, 240), (14, 40),
+            (120, 110, 150), 0.12, 11, jitter=30)
+    # mittlere Schicht mit warmen Fensterreihen
+    skyline(hor - 6, (40, 38, 66), (56, 110), (150, 300), (10, 30),
+            (255, 214, 128), 0.42, 23, jitter=20)
+    # Baukran (Silhouette) über der mittleren Schicht
+    cxb, ctop = int(W * 0.30), int(Hh * 0.15)
+    jy = ctop + 8
+    crane = (34, 32, 52)
+    lattice = (58, 56, 80)
+    d.rectangle([cxb - 6, ctop, cxb + 6, hor], fill=crane)          # Turm
+    for yy in range(ctop, hor, 26):
+        d.line([(cxb - 6, yy), (cxb + 6, yy + 13)], fill=lattice, width=2)
+        d.line([(cxb + 6, yy), (cxb - 6, yy + 13)], fill=lattice, width=2)
+    d.polygon([(cxb - 34, jy - 4), (cxb, jy - 52), (cxb + 34, jy - 4)], fill=crane)  # A-Spitze
+    d.rectangle([cxb - 110, jy - 7, cxb + 250, jy], fill=crane)     # Ausleger (Jib)
+    d.rectangle([cxb - 110, jy - 5, cxb - 84, jy + 10], fill=crane)  # Gegengewicht
+    d.rectangle([cxb + 4, jy, cxb + 22, jy + 18], fill=crane)       # Führerkabine
+    hx = cxb + 190                                                  # Laufkatze + Seil
+    d.line([(hx, jy), (hx, jy + 150)], fill=crane, width=2)
+    d.rectangle([hx - 8, jy + 150, hx + 8, jy + 162], fill=crane)   # Haken/Last
+    # vordere Schicht (dunkelste Silhouette, dichte Lichter)
+    skyline(hor + 30, (24, 22, 40), (60, 130), (120, 260), (6, 22),
+            (255, 224, 150), 0.5, 37, jitter=16)
+    (IMG / "background").mkdir(parents=True, exist_ok=True)
+    img.save(IMG / "background" / "city_bg.png")
+    print("  background/city_bg.png  (1536, 768)")
+
+
+def gen_city_props():
+    STEEL = (86, 96, 118, 255); STEEL_LO = (52, 60, 78, 255)
+    GLASS = (74, 100, 128, 255); MULL = (120, 150, 176, 255)
+    WIN_LIT = (255, 222, 142, 255); WIN_OFF = (52, 78, 100, 255)
+
+    # Wolkenkratzer (72x208) – Glasfassade mit Antenne
+    p = Pen(72, 208)
+    rnd = _lcg(0xB17)
+    p.line([(36, 16), (36, 1)], width=1.6, fill=(70, 76, 92, 255))   # Antenne
+    p.ellipse([34, 0, 38, 4], fill=(255, 96, 96, 255))
+    p.rect([9, 10, 63, 16], fill=STEEL_LO)                            # Dachkante
+    p.rect([5, 16, 67, 208], fill=(44, 52, 70, 255))                 # Rahmen
+    p.rect([7, 18, 65, 208], fill=GLASS)                             # Glasfassade
+    for wy in range(22, 204, 12):
+        for wx in range(11, 60, 11):
+            c = WIN_LIT if next(rnd) < 0.45 else WIN_OFF
+            p.rect([wx, wy, wx + 7, wy + 8], fill=c)
+    for wx in range(10, 66, 11):                                     # vertikale Streben
+        p.line([(wx - 1, 18), (wx - 1, 207)], width=1, fill=MULL)
+    _save(p.result(), "props", "skyscraper.png")
+
+    # Baukran (140x176) – gelber Turmdrehkran
+    p = Pen(140, 176)
+    Y = (238, 194, 60, 255); Y_LO = (196, 150, 40, 255); DK = (60, 62, 74, 255)
+    tx = 40
+    p.rect([tx - 6, 20, tx + 6, 172], fill=Y)                        # Turm
+    p.rect([tx - 6, 20, tx - 2, 172], fill=Y_LO)
+    for yy in range(24, 168, 18):                                    # Gitterstreben
+        p.line([(tx - 6, yy), (tx + 6, yy + 9)], width=1.2, fill=Y_LO)
+        p.line([(tx + 6, yy), (tx - 6, yy + 9)], width=1.2, fill=Y_LO)
+    p.poly([(tx - 20, 20), (tx, 2), (tx + 20, 20)], fill=Y)          # A-Spitze
+    p.line([(tx - 20, 20), (tx, 2)], width=1.4, fill=Y_LO)
+    jy = 22
+    p.rect([tx - 34, jy - 5, tx + 96, jy + 1], fill=Y)               # Ausleger
+    p.rect([tx - 34, jy - 5, tx + 96, jy - 3], fill=Y_LO)
+    for jx in range(tx - 30, tx + 92, 12):                           # Fachwerk im Ausleger
+        p.line([(jx, jy + 1), (jx + 6, jy - 5)], width=1, fill=Y_LO)
+    p.rect([tx - 34, jy - 4, tx - 22, jy + 8], fill=DK)              # Gegengewicht
+    p.rect([tx + 2, jy + 1, tx + 16, jy + 16], fill=DK)              # Kabine
+    p.rect([tx + 4, jy + 3, tx + 14, jy + 9], fill=(150, 200, 230, 255))
+    hx = tx + 74                                                     # Seil + Haken
+    p.line([(hx, jy + 1), (hx, jy + 84)], width=1.4, fill=DK)
+    p.rect([hx - 5, jy + 84, hx + 5, jy + 92], fill=(70, 72, 84, 255))
+    _save(p.result(), "props", "crane.png")
+
+    # Straßenlaterne (28x104)
+    p = Pen(28, 104)
+    POLE = (70, 74, 88, 255); POLE_HI = (110, 116, 134, 255)
+    p.ellipse([6, 99, 22, 104], fill=(50, 54, 66, 255))             # Sockel
+    p.rect([12, 14, 16, 102], fill=POLE)
+    p.rect([12, 14, 13.4, 102], fill=POLE_HI)
+    p.rounded([9, 6, 24, 16], 3, fill=POLE)                         # Ausleger-Kopf
+    p.rounded([10, 9, 23, 20], 4, fill=(255, 244, 190, 255))        # Leuchte
+    p.ellipse([8, 8, 25, 26], fill=(255, 236, 150, 60))            # Lichtschein
+    _save(p.result(), "props", "streetlamp.png")
+
+    # Baustellen-Absperrung / Pylon (34x40)
+    p = Pen(34, 40)
+    OR = (232, 118, 40, 255); OR_LO = (190, 88, 26, 255)
+    p.rect([4, 36, 30, 40], fill=(60, 62, 74, 255))                 # Fußplatte
+    p.poly([(17, 4), (7, 36), (27, 36)], fill=OR)                   # Kegel
+    p.poly([(17, 4), (27, 36), (20, 36)], fill=OR_LO)               # Schattenseite
+    p.poly([(13.5, 15), (20.5, 15), (22.5, 22), (11.5, 22)], fill=(240, 240, 245, 255))  # Reflexband
+    p.poly([(11, 27), (23, 27), (25, 33), (9, 33)], fill=(240, 240, 245, 255))
+    _save(p.result(), "props", "barrier.png")
+
+
+def draw_robot(step: int) -> Image.Image:
+    p = Pen(30, 30)
+    MET = (152, 160, 178, 255); MET_LO = (104, 112, 132, 255)
+    MET_HI = (198, 206, 222, 255); EYE = (120, 224, 255, 255)
+    # Antenne
+    p.line([(15, 8), (15, 3)], width=1.2, fill=MET_LO)
+    p.ellipse([13, 1, 17, 5], fill=(255, 96, 96, 255))
+    # Blechkörper
+    p.rounded([5, 7, 25, 25], 3, fill=OUT)
+    p.rounded([6, 8, 24, 24], 3, fill=MET)
+    p.rounded([7, 9, 23, 15], 2, fill=MET_HI)                      # Glanz oben
+    p.rounded([7, 18, 23, 23], 2, fill=MET_LO)                     # Schatten unten
+    # Visier + Auge (wandert -> Blickrichtung wechselt je Frame)
+    p.rounded([8, 12, 22, 18], 2, fill=(28, 38, 54, 255))
+    ex = 12.5 if step == 0 else 17.5
+    p.ellipse([ex - 2.6, 13, ex + 2.6, 17.4], fill=EYE)
+    p.ellipse([ex - 1, 13.6, ex + 1.2, 15.6], fill=WHITE)
+    # Mund-Gitter
+    for gx in range(11, 21, 3):
+        p.line([(gx, 20.5), (gx, 22.5)], width=.8, fill=MET_LO)
+    # Räder/Füße (alternieren)
+    fo = 2 if step == 0 else -2
+    for cx in (11, 19):
+        off = fo if cx == 19 else -fo
+        p.ellipse([cx - 3 + off, 24, cx + 3 + off, 30], fill=MET_LO)
+        p.ellipse([cx - 1.6 + off, 25.6, cx + 1.6 + off, 28.6], fill=(38, 42, 54, 255))
+    return p.result()
+
+
+def gen_robot():
+    _save(_sheet([draw_robot(0), draw_robot(1)], 30, 30), "enemies", "robot.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_egypt_bg()
@@ -1111,6 +1309,9 @@ def main():
     gen_space_bg()
     gen_space_props()
     gen_alien()
+    gen_city_bg()
+    gen_city_props()
+    gen_robot()
     gen_tileset()
     gen_pengu()
     gen_pengu_big()

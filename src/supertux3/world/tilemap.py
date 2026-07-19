@@ -24,8 +24,10 @@ CHAR_TO_TILE: dict[str, int] = {
     "W": 8,   # Sandstein (Blöcke / Pyramiden)
     "M": 9,   # Mondgestein (Weltraum)
     "P": 10,  # Metallplatte (Raumstation)
+    "C": 11,  # Asphalt / Straße (Stadt)
+    "K": 12,  # Beton / Stahlträger (Baustelle)
 }
-SOLID_IDS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+SOLID_IDS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
 
 
 class Tilemap:

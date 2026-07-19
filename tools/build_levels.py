@@ -620,11 +620,95 @@ def level21():
     b.dump(LV / "level21.json", "Sternenmeer", "space")
 
 
+# --- Welt Großstadt (Asphalt "C" / Beton+Stahl "K") ---------------------
+def level22():
+    # Straßenzug: Laternen, Absperrungen, Roboter-Streife
+    b = B(172)
+    pits = [(30, 34), (56, 62), (88, 93), (120, 126), (148, 153)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="C", fill="K"); x = c + 1
+    b.ground(x, 171, ch="C", fill="K")
+    for x0, x1, y in [(20, 26, 11), (66, 72, 10), (100, 106, 11), (132, 138, 10)]:
+        b.plat(x0, x1, y, "K")
+    b.e("mplat", 56, 12, 62, 9, 3); b.e("mplat", 120, 11, 126, 11, 3)
+    b.e("spring", 28, FLOOR); b.e("spring", 86, FLOOR); b.e("spring", 146, FLOOR)
+    b.arc(32, 8); b.arc(59, 9); b.arc(90, 8); b.arc(123, 9); b.arc(150, 8)
+    b.coins(66, 72, 8); b.coins(100, 106, 9); b.coins(132, 138, 8)
+    b.e("growth", 68, 8); b.e("fish", 22, 12)
+    for ex in (16, 44, 78, 110, 158):
+        b.e("robot", ex, FLOOR)
+    for ex in (40, 96):
+        b.e("snowball", ex, FLOOR)
+    b.e("checkpoint", 92, FLOOR); b.e("goal", 168, FLOOR)
+    for t in (10, 50, 108, 140):
+        b.prop("streetlamp", t)
+    for t in (34, 90, 126):
+        b.prop("barrier", t)
+    b.prop("skyscraper", 74); b.prop("skyscraper", 155)
+    b.dump(LV / "level22.json", "Innenstadt bei Nacht", "city")
+
+
+def level23():
+    # Baustelle: Stahlträger-Plattformen, Kräne, schießende Pflanzen
+    b = B(182)
+    pits = [(24, 29), (48, 54), (78, 84), (108, 114), (140, 146), (164, 169)]
+    x = 0
+    for a, c in pits:
+        b.ground(x, a - 1, ch="C", fill="K"); x = c + 1
+    b.ground(x, 181, ch="C", fill="K")
+    for x0, x1, y in [(34, 40, 10), (66, 72, 9), (96, 102, 11), (126, 132, 9)]:
+        b.plat(x0, x1, y, "K")
+    b.e("mplat", 48, 12, 54, 9, 3); b.e("mplat", 108, 11, 114, 11, 3)
+    b.e("box", 36, 8); b.e("box", 37, 8)
+    b.e("spring", 22, FLOOR); b.e("spring", 76, FLOOR); b.e("spring", 138, FLOOR)
+    for cx in (26, 51, 81, 111, 143):
+        b.arc(cx, 8)
+    b.e("growth", 68, 7); b.e("fishrain", 100, 8)
+    for ex in (16, 62, 120, 176):
+        b.e("robot", ex, FLOOR)
+    for ex in (44, 90, 150):
+        b.e("shooter", ex, FLOOR)
+    b.e("flyer", 70, 6, 6); b.e("flyer", 130, 6, 7)
+    b.e("checkpoint", 86, FLOOR); b.e("goal", 178, FLOOR)
+    b.prop("crane", 30); b.prop("crane", 150)
+    for t in (12, 92, 160):
+        b.prop("barrier", t)
+    b.prop("skyscraper", 116)
+    b.dump(LV / "level23.json", "Wolkenkratzer-Baustelle", "city")
+
+
+def level24():
+    # Dächer-Parcours hoch über der Stadt: viele bewegliche Plattformen
+    b = B(185)
+    b.ground(0, 12, ch="C", fill="K")
+    b.ground(150, 184, ch="C", fill="K")
+    for x0, x1 in [(24, 30), (46, 52), (74, 82), (108, 116), (132, 140)]:
+        b.plat(x0, x1, 12, "K")
+    b.e("mplat", 13, 12, 23, 12, 3)
+    b.e("mplat", 31, 12, 45, 9, 3)
+    b.e("mplat", 53, 11, 73, 11, 3)
+    b.e("mplat", 83, 10, 107, 13, 3)
+    b.e("mplat", 117, 12, 149, 12, 4)
+    for cx in (27, 49, 78, 112, 136):
+        b.arc(cx, 9)
+    b.e("growth", 50, 11); b.e("fish", 6, 12)
+    for ex in (26, 78, 158, 178):
+        b.e("robot", ex, FLOOR)
+    b.e("flyer", 40, 6, 6); b.e("flyer", 96, 6, 8); b.e("flyer", 140, 8, 6)
+    b.e("spring", 8, FLOOR); b.e("spring", 176, FLOOR)
+    b.e("checkpoint", 78, FLOOR); b.e("goal", 181, FLOOR)
+    b.prop("skyscraper", 4); b.prop("skyscraper", 166)
+    b.prop("crane", 88); b.prop("streetlamp", 158)
+    b.dump(LV / "level24.json", "Über den Dächern", "city")
+
+
 def main():
     print("Baue Level ->", LV)
     for fn in (level1, level2, level3, level4, level5, level6, level7, level8,
                level9, level10, level11, level12, level13, level14, level15,
-               level16, level17, level18, level19, level20, level21):
+               level16, level17, level18, level19, level20, level21,
+               level22, level23, level24):
         fn()
     print("Fertig.")
 

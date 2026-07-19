@@ -97,4 +97,4 @@ UI_SHADOW = (30, 30, 40)
 START_LIVES = 3
 
 # Level-Reihenfolge (Dateien in levels/)
-LEVEL_FILES = [f"level{i}.json" for i in range(1, 22)]
+LEVEL_FILES = [f"level{i}.json" for i in range(1, 25)]
