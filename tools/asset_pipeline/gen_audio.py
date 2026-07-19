@@ -317,6 +317,29 @@ def space_music():
     return mix(L, twinkle, bs)
 
 
+def city_music():
+    # urbaner Funk – synkopierter Triangel-Bass, e-moll-Pentatonik-Lead,
+    # treibende HiHats für Großstadt-Feeling
+    bpm = 116
+    A = [("E5", .5), ("G5", .5), ("A5", .5), ("E5", .5),
+         ("G5", .5), ("A5", .5), ("B5", .5), ("A5", .5),
+         ("G5", .5), ("E5", .5), ("D5", .5), ("E5", .5),
+         ("A4", .5), ("B4", .5), ("D5", .5), ("E5", .5)]
+    B = [("B5", .5), ("A5", .5), ("G5", .5), ("A5", .5),
+         ("E5", 1.0), ("D5", .5), ("E5", .5),
+         ("G5", .5), ("A5", .5), ("G5", .5), ("E5", .5),
+         ("D5", .5), ("B4", .5), ("E5", 1.0)]
+    L = lead(A + B + A + B, bpm, duty=0.25, vol=0.2, vib=4)
+    ch = rep([(["E4", "G4", "B4"], 1), (["A3", "C4", "E4"], 1),
+              (["D4", "F#4", "A4"], 1), (["G3", "B3", "D4"], 1)], 8)
+    A2 = arp(ch, bpm, vol=0.11, rate=0.0625)
+    bs = bass(rep([("E2", .5), ("E2", .25), ("G2", .25), ("A2", .5), ("E2", .5),
+                   ("D2", .5), ("D2", .25), ("E2", .25), ("G2", .5), ("A2", .5)], 8),
+              bpm, vol=0.30)
+    dr = drums(rep("k.hhs.hk", 16), bpm, vol=0.95)
+    return mix(L, A2, bs, dr)
+
+
 def boss_music():
     bpm = 160
     # düster, treibend (a-moll/vermindert)
@@ -401,7 +424,8 @@ def main():
     tracks = {
         "title": title_music, "level1": grass_music, "level2": sunset_music,
         "level3": night_music, "ice": ice_music, "cave": cave_music,
-        "egypt": egypt_music, "space": space_music, "boss": boss_music,
+        "egypt": egypt_music, "space": space_music, "city": city_music,
+        "boss": boss_music,
     }
     for name, fn in tracks.items():
         write_ogg(AUD / "music" / f"{name}.ogg", fn())
