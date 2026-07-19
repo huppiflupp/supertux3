@@ -125,6 +125,10 @@ def build_pengu():
         print("keine Pinguin-Posen (flux_src/pengu_stand.png fehlt) – übersprungen")
         return
     walk = walk or stand; jump = jump or stand; duck = duck or stand
+    # FLUX-Pinguin schaut nach links; das Spiel erwartet Basis nach RECHTS
+    # (facing<0 wird gespiegelt). Deshalb alle Posen einmal horizontal spiegeln.
+    stand, walk, jump, duck = (im.transpose(Image.FLIP_LEFT_RIGHT)
+                               for im in (stand, walk, jump, duck))
 
     def sheet(fw, fh, path):
         # 10 Frames: idle0,idle1,walk0,walk1,walk2,walk3,jump,fall,duck,throw
