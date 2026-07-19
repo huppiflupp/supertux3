@@ -10,11 +10,18 @@ import json
 import os
 from pathlib import Path
 
+from ..settings import DEFAULT_QUALITY, DEFAULT_FPS
+
 _DEFAULT = {
     "unlocked": 0,          # höchster freigeschalteter Level-Index
     "best_coins": {},       # {"0": 12, "1": 30, ...}
+    "best_stars": {},
+    "best_time": {},
     "music_volume": 0.5,
     "muted": False,
+    "quality": DEFAULT_QUALITY,   # "smooth" | "fast"
+    "fps": DEFAULT_FPS,           # 30 | 60
+    "fullscreen": False,
 }
 
 

@@ -6,7 +6,7 @@ Hügelwelt, Münzen, stampfbare Schneebälle, klassisches Sprung-Gameplay.
 
 ![Titel](assets/images/background/title_art.png)
 
-## Spielen
+## Spielen (Entwicklung)
 
 ```bash
 ./run.sh
@@ -14,6 +14,18 @@ Hügelwelt, Münzen, stampfbare Schneebälle, klassisches Sprung-Gameplay.
 
 Das Skript legt beim ersten Start ein venv an, installiert die Abhängigkeiten,
 erzeugt fehlende Assets und startet das Spiel.
+
+## Installieren (auch für andere Rechner / Kinder)
+
+- **Ohne Root (jede Linux-Distro):** `bash packaging/install-user.sh` — legt
+  Menüeintrag „SuperTux3" + Icon an.
+- **Systemweit:** `sudo make install`
+- **Flatpak / RPM / DEB** und **Raspberry Pi 400**: siehe
+  [docs/packaging.md](docs/packaging.md) und [docs/pi400.md](docs/pi400.md).
+
+Zum Spielen genügt Python 3.10+ und `pygame` (empfohlen `pygame-ce`).
+Für schwache Hardware: `supertux3 --quality fast --fps 30` oder im Spiel
+**Optionen → Grafik = „Schnell"**.
 
 ## Steuerung
 

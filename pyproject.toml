@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "supertux3"
+version = "0.5.0"
+description = "SuperTux3 – ein 2D-Jump'n'Run im Geiste von SuperTux"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "huppiflupp" }]
+dependencies = ["pygame-ce>=2.5"]
+
+[project.optional-dependencies]
+# Nur zum (Neu-)Erzeugen der Assets nötig, nicht zum Spielen:
+assets = ["numpy>=1.24", "Pillow>=10"]
+
+[project.scripts]
+supertux3 = "supertux3.main:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

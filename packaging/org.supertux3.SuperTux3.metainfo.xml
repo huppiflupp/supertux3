@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.supertux3.SuperTux3</id>
+  <name>SuperTux3</name>
+  <summary>Ein 2D-Jump'n'Run mit dem Pinguin Pengu</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      SuperTux3 ist ein 2D-Jump'n'Run im Geiste von SuperTux: renne und springe
+      mit dem Pinguin Pengu durch 15 Level über fünf Welten, sammle Münzen und
+      Sterne, stampfe Gegner und bezwinge zwei Bosse. Mit In-Game-Level-Editor,
+      Gamepad-Unterstützung und einem Schnell-Grafikmodus für schwache Hardware
+      (z.B. Raspberry Pi 400).
+    </p>
+  </description>
+  <categories>
+    <category>Game</category>
+    <category>ArcadeGame</category>
+  </categories>
+  <launchable type="desktop-id">org.supertux3.SuperTux3.desktop</launchable>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-cartoon">mild</content_attribute>
+  </content_rating>
+  <releases>
+    <release version="0.5.0" date="2026-07-19"/>
+  </releases>
+</component>

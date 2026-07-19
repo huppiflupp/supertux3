@@ -85,7 +85,8 @@ supertux3/
 │       ├── intro.py           # animierte Titel-Intro (überspringbar)
 │       ├── menu.py            # Titelmenü (nutzt title_art.png)
 │       ├── levelselect.py     # Level-Auswahl 3x5 (Sterne/Bestzeit/Fortschritt)
-│       ├── editor.py          # In-Game-Level-Editor (speichern/testspielen)
+│       ├── options.py         # Optionen (Grafik/FPS/Vollbild/Lautstärke)
+│       ├── editor.py          # In-Game-Level-Editor (Maus+Tastatur)
 │       ├── play.py            # Gameplay (Effekte, Power-Up, Sterne/Timer, Boss)
 │       └── gameover.py        # Ergebnis-Szene (Level/Spiel geschafft / Game Over)
 ├── assets/
@@ -147,6 +148,21 @@ supertux3/
   Custom-Level via `PlayScene(game, level_name=...)`. Zugang: Menü/Level-Auswahl `E`.
 - **Intro** (`scenes/intro.py`): Spielstart zeigt Intro → Menü.
 - **15 Level** gesamt (2 Bosse).
+
+### Mechaniken (M5) — Distribution & Feinschliff
+- **Optionen/Performance**: `scenes/options.py`; `game.quality` ("smooth"/"fast"),
+  `game.fps_cap`; `_present()` wählt smoothscale vs nearest. ARM-Autoprofil in
+  `settings` (`IS_ARM`, `DEFAULT_QUALITY`). CLI in `main.py`
+  (`--quality/--fps/--fullscreen/--level`). Alles im Speicherstand.
+- **Maus-Editor**: `scenes/editor.py` mit freier Kamera + `game.mouse_virtual()`
+  (Fenster→interne Koordinaten). Custom-Level in `settings.USER_LEVEL_DIR`
+  (`~/.local/share/supertux3/levels`); `Level.load()` sucht dort zusätzlich.
+- **Datenpfade**: `settings._find_root()` findet `assets/`+`levels/` im Dev-Baum
+  ODER in `<prefix>/share/supertux3` (Install) ODER via `SUPERTUX3_DATA`.
+- **Paketierung** (`packaging/`, `Makefile`, `pyproject.toml`): `make install`,
+  Nutzer-Installer `install-user.sh`, Flatpak/RPM/DEB, Desktop-Eintrag + Icon
+  (`tools/asset_pipeline/gen_icon.py`). Siehe `docs/packaging.md`.
+- **Raspberry Pi 400**: `docs/pi400.md` (Python 3.11, `--quality fast`, KMSDRM).
 
 ---
 

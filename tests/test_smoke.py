@@ -102,15 +102,14 @@ def test_editor_roundtrip():
     g = Game()
     ed = EditorScene(g, "editor_test.json")
     ed.on_enter()
-    ed.cursor = [10, 13]
-    ed._place()                       # Kachel setzen
+    ed._place_at(10, 13)              # Kachel setzen
     ed.mode, ed.sel = 1, 1            # entity/star
-    ed.cursor = [12, 12]
-    ed._place()
+    ed._place_at(12, 12)
     ed._save()
     lv = Level.load(g, "editor_test.json")
     assert lv.total_stars == 1
-    (LEVEL_DIR / "editor_test.json").unlink(missing_ok=True)
+    from supertux3.settings import USER_LEVEL_DIR
+    (USER_LEVEL_DIR / "editor_test.json").unlink(missing_ok=True)
     pygame.quit()
 
 

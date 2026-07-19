@@ -1,0 +1,4 @@
+#!/bin/sh
+# Launcher für installiertes SuperTux3 (@DATADIR@ wird beim Install ersetzt).
+export SUPERTUX3_DATA="@DATADIR@"
+exec env PYTHONPATH="@DATADIR@/src${PYTHONPATH:+:$PYTHONPATH}" python3 -m supertux3 "$@"

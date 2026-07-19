@@ -1,0 +1,16 @@
+Source: supertux3
+Section: games
+Priority: optional
+Maintainer: huppiflupp <aussenh@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/huppiflupp/supertux3
+
+Package: supertux3
+Architecture: all
+Depends: ${misc:Depends}, python3 (>= 3.10), python3-pygame (>= 2)
+Description: Ein 2D-Jump'n'Run mit dem Pinguin Pengu
+ SuperTux3 ist ein 2D-Jump'n'Run im Geiste von SuperTux: 15 Level ueber fuenf
+ Welten, Muenzen und Sterne, stampfbare Gegner, zwei Bosse, In-Game-Level-Editor,
+ Gamepad-Unterstuetzung und ein Schnell-Grafikmodus fuer schwache Hardware
+ (z.B. Raspberry Pi 400).

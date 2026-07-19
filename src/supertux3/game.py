@@ -17,7 +17,8 @@ from .engine import save as savemod
 
 
 class Game:
-    def __init__(self) -> None:
+    def __init__(self, opts: dict | None = None) -> None:
+        self.opts = opts or {}
         try:
             pygame.mixer.pre_init(44100, -16, 2, 512)
         except pygame.error:
@@ -52,19 +53,31 @@ class Game:
         self.audio = AudioManager()
         self._load_audio()
 
-        # Speicherstand laden
+        # Speicherstand laden + Grafik/Performance anwenden
         self.save_data = savemod.load()
         self.unlocked = int(self.save_data.get("unlocked", 0))
         self.audio.music_volume = float(self.save_data.get("music_volume", 0.5))
         self.audio.muted = bool(self.save_data.get("muted", False))
+        self.quality = self.opts.get("quality") or self.save_data.get("quality", "smooth")
+        self.fps_cap = int(self.opts.get("fps") or self.save_data.get("fps", 60))
+        want_fs = self.opts.get("fullscreen")
+        if want_fs is None:
+            want_fs = self.save_data.get("fullscreen", False)
+        if want_fs and not self.fullscreen:
+            self._toggle_fullscreen()
 
         self.lives = START_LIVES
         self.level_index = 0
         self.running = True
         self.scenes = SceneManager(self)
 
-        from .scenes.intro import IntroScene
-        self.scenes.switch(IntroScene(self))
+        start_level = self.opts.get("level")
+        if start_level:
+            from .scenes.play import PlayScene
+            self.scenes.switch(PlayScene(self, level_name=start_level))
+        else:
+            from .scenes.intro import IntroScene
+            self.scenes.switch(IntroScene(self))
 
     def _init_joysticks(self):
         js = []
@@ -103,6 +116,9 @@ class Game:
         self.save_data["unlocked"] = self.unlocked
         self.save_data["music_volume"] = self.audio.music_volume
         self.save_data["muted"] = self.audio.muted
+        self.save_data["quality"] = self.quality
+        self.save_data["fps"] = self.fps_cap
+        self.save_data["fullscreen"] = self.fullscreen
         savemod.save(self.save_data)
 
     def _load_audio(self) -> None:
@@ -121,16 +137,36 @@ class Game:
         w, h = self.window.get_size()
         s = min(w / VIRTUAL_W, h / VIRTUAL_H)
         tw, th = max(1, int(VIRTUAL_W * s)), max(1, int(VIRTUAL_H * s))
-        scaled = pygame.transform.smoothscale(self.screen, (tw, th))
+        if (tw, th) == (VIRTUAL_W, VIRTUAL_H):
+            scaled = self.screen                     # 1:1, keine Skalierung nötig
+        elif self.quality == "smooth":
+            scaled = pygame.transform.smoothscale(self.screen, (tw, th))
+        else:                                        # "fast": nearest (Pi/schwache HW)
+            scaled = pygame.transform.scale(self.screen, (tw, th))
         self.window.fill((0, 0, 0))
         self.window.blit(scaled, ((w - tw) // 2, (h - th) // 2))
         pygame.display.flip()
+
+    def view_transform(self):
+        """Skalierungsfaktor + Offset des internen Bildes im Fenster (für Maus)."""
+        w, h = self.window.get_size()
+        s = min(w / VIRTUAL_W, h / VIRTUAL_H)
+        tw, th = VIRTUAL_W * s, VIRTUAL_H * s
+        return s, (w - tw) / 2, (h - th) / 2
+
+    def mouse_virtual(self):
+        """Mausposition in interne Renderkoordinaten umrechnen."""
+        mx, my = pygame.mouse.get_pos()
+        s, ox, oy = self.view_transform()
+        if s <= 0:
+            return (0, 0)
+        return ((mx - ox) / s, (my - oy) / s)
 
     def run(self) -> None:
         clock = pygame.time.Clock()
         acc = 0.0
         while self.running:
-            acc += min(clock.tick(FPS) / 1000.0, 0.10)
+            acc += min(clock.tick(self.fps_cap) / 1000.0, 0.10)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

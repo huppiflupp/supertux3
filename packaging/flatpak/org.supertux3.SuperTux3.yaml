@@ -1,0 +1,38 @@
+# Flatpak-Manifest für SuperTux3.
+# Bauen:  flatpak-builder --user --install --force-clean build-dir \
+#           packaging/flatpak/org.supertux3.SuperTux3.yaml
+# Hinweis: Der pip-Schritt braucht beim Bauen Netz (pygame-ce-Wheel). Für einen
+# vollständig offline reproduzierbaren Build die Wheels vendorn (flatpak-pip-generator).
+app-id: org.supertux3.SuperTux3
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: supertux3
+finish-args:
+  - --socket=x11
+  - --socket=pulseaudio
+  - --device=dri
+  - --device=all           # Gamepads
+  - --share=ipc
+modules:
+  - name: python3-pygame-ce
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-build-isolation pygame-ce
+    build-options:
+      build-args:
+        - --share=network
+  - name: supertux3
+    buildsystem: simple
+    build-commands:
+      - install -d /app/share/supertux3/src
+      - cp -r src/supertux3 /app/share/supertux3/src/
+      - cp -r assets levels /app/share/supertux3/
+      - sed 's|@DATADIR@|/app/share/supertux3|g' packaging/supertux3.in > /app/bin/supertux3
+      - chmod 755 /app/bin/supertux3
+      - install -Dm644 packaging/org.supertux3.SuperTux3.desktop /app/share/applications/org.supertux3.SuperTux3.desktop
+      - install -Dm644 packaging/org.supertux3.SuperTux3.metainfo.xml /app/share/metainfo/org.supertux3.SuperTux3.metainfo.xml
+      - install -Dm644 assets/icon/supertux3-256.png /app/share/icons/hicolor/256x256/apps/org.supertux3.SuperTux3.png
+    sources:
+      - type: dir
+        path: ../..

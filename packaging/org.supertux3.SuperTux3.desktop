@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=SuperTux3
+GenericName=Jump'n'Run
+Comment=Ein 2D-Jump'n'Run mit dem Pinguin Pengu
+Exec=supertux3
+Icon=org.supertux3.SuperTux3
+Terminal=false
+Categories=Game;ArcadeGame;
+Keywords=platformer;jump;run;penguin;

@@ -79,6 +79,9 @@ class PlayScene(Scene):
             elif key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
                 self.game.audio.change_music_volume(0.1)
                 self.game.save_progress()
+            elif key == pygame.K_g:
+                self.game.quality = "fast" if self.game.quality == "smooth" else "smooth"
+                self.game.save_progress()
             return
         if act in ("pause", "back") or (event.type == pygame.KEYDOWN and event.key == pygame.K_p):
             self.paused = True
@@ -426,7 +429,7 @@ class PlayScene(Scene):
         surface.blit(veil, (0, 0))
         self._center_text(surface, "Pause", self.big_font, WHITE)
         lines = ["ESC/P = weiter    ·    R = neu    ·    Q = Level-Auswahl",
-                 "M = Ton    ·    +/- = Musiklautstärke"]
+                 "M = Ton    ·    +/- = Lautstärke    ·    G = Grafik glatt/schnell"]
         for i, ln in enumerate(lines):
             img = self.font.render(ln, True, (215, 225, 240))
             rect = img.get_rect(center=(VIRTUAL_W // 2, VIRTUAL_H // 2 + 60 + i * 32))

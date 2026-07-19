@@ -23,7 +23,7 @@ from pathlib import Path
 import pygame
 
 from .tilemap import Tilemap
-from ..settings import TILE, LEVEL_DIR
+from ..settings import TILE, LEVEL_DIR, USER_LEVEL_DIR
 from ..entities.player import Player, FORM
 from ..entities.enemy import Snowball, Spiky, Flyer
 from ..entities.collectible import Coin, GrowItem, Goal, Star
@@ -131,6 +131,8 @@ class Level:
         path = Path(name)
         if not path.exists():
             path = LEVEL_DIR / name
+        if not path.exists():
+            path = USER_LEVEL_DIR / name       # selbst gebaute Level
         if path.suffix.lower() == ".tmx":
             from .tmx import parse_tmx
             data = parse_tmx(path)

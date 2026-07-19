@@ -1,8 +1,12 @@
-"""In-Game-Level-Editor (tastaturgesteuert).
+"""In-Game-Level-Editor (Maus + Tastatur).
 
-Cursor mit Pfeilen/WASD bewegen, Objekte setzen/löschen, speichern, testspielen.
-Speichert nach levels/<datei> (Standard custom.json) im normalen JSON-Format,
-das direkt gespielt und weiter bearbeitet werden kann.
+Maus: links setzen (ziehen malt), rechts löschen, Mausrad Auswahl, mittlere
+Taste ziehen zum Schwenken. Tastatur: Pfeile/WASD Cursor, Leertaste setzen,
+Entf löschen, Tab Modus, Q/E Auswahl, Y Theme, B Startpunkt, F5 speichern,
+P testspielen, L neu laden, ESC Menü.
+
+Speichert nach <User-Daten>/levels/<datei> (Standard custom.json) – funktioniert
+auch bei installierten, schreibgeschützten Builds.
 """
 from __future__ import annotations
 
@@ -11,8 +15,8 @@ import json
 import pygame
 
 from ..engine.scene import Scene
-from ..engine.camera import Camera
-from ..settings import VIRTUAL_W, VIRTUAL_H, TILE, LEVEL_DIR, WHITE, UI_SHADOW
+from ..settings import (VIRTUAL_W, VIRTUAL_H, TILE, LEVEL_DIR, USER_LEVEL_DIR,
+                        WHITE, UI_SHADOW)
 from ..world.tilemap import CHAR_TO_TILE
 
 TILE_PAL = [("G", "Gras"), ("D", "Erde"), ("B", "Ziegel"),
@@ -23,7 +27,6 @@ PROP_PAL = ["bush", "tree", "cloud", "flag"]
 THEMES = ["grass", "sunset", "night", "ice", "cave"]
 MODES = ["tile", "entity", "prop"]
 
-# Marker-Farben/Kürzel für die Objektanzeige
 ENT_STYLE = {
     "coin": ((255, 214, 70), "C"), "star": ((255, 236, 120), "*"),
     "growth": ((255, 244, 200), "G+"), "snowball": ((230, 240, 255), "Sn"),
@@ -37,6 +40,7 @@ PROP_COLOR = (110, 200, 120)
 W, H = 130, 17
 GROUND = 15
 FLOOR = 14
+HUD_H = 30
 
 
 class EditorScene(Scene):
@@ -58,9 +62,10 @@ class EditorScene(Scene):
         self.ents = []
         self.props = []
         self.spawn = [3, FLOOR]
+        self.cam = [0.0, 0.0]
+        self.painting = None       # 'place' | 'erase' | None
+        self.panning = False
         self._load_or_blank()
-        self.camera = Camera(W * TILE, H * TILE)
-        self.camera.update(self._cur_rect(), 0.0, snap=True)
         self.game.audio.play_music("title.ogg")
 
     # --- Modell ------------------------------------------------------
@@ -71,9 +76,16 @@ class EditorScene(Scene):
         self.ents = [["goal", W - 4, FLOOR]]
         self.spawn = [3, FLOOR]
 
+    def _src_path(self):
+        for base in (USER_LEVEL_DIR, LEVEL_DIR):
+            p = base / self.filename
+            if p.exists():
+                return p
+        return None
+
     def _load_or_blank(self):
-        path = LEVEL_DIR / self.filename
-        if not path.exists():
+        path = self._src_path()
+        if path is None:
             self._blank()
             return
         try:
@@ -93,33 +105,26 @@ class EditorScene(Scene):
         self.name = data.get("name", "Mein Level")
 
     def to_data(self):
-        return {
-            "name": self.name, "theme": THEMES[self.theme], "spawn": list(self.spawn),
-            "solid": ["".join(r) for r in self.grid],
-            "props": self.props, "entities": self.ents,
-        }
+        return {"name": self.name, "theme": THEMES[self.theme], "spawn": list(self.spawn),
+                "solid": ["".join(r) for r in self.grid],
+                "props": self.props, "entities": self.ents}
 
     def _save(self):
-        path = LEVEL_DIR / self.filename
+        USER_LEVEL_DIR.mkdir(parents=True, exist_ok=True)
+        path = USER_LEVEL_DIR / self.filename
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.to_data(), f, ensure_ascii=False, indent=0)
-        self._flash(f"Gespeichert: {self.filename}")
+        self._flash(f"Gespeichert: {path}")
 
     def _flash(self, msg):
-        self.status = msg
-        self.status_t = 2.0
+        self.status, self.status_t = msg, 2.5
 
-    def _cur_rect(self):
-        return pygame.Rect(self.cursor[0] * TILE, self.cursor[1] * TILE, TILE, TILE)
+    def _pal_len(self):
+        return [len(TILE_PAL), len(ENT_PAL), len(PROP_PAL)][self.mode]
 
-    def _ents_at(self, tx, ty):
-        return [e for e in self.ents if e[1] == tx and e[2] == ty]
-
-    def _props_at(self, tx, ty):
-        return [p for p in self.props if p[1] == tx and p[2] == ty]
-
-    def _place(self):
-        tx, ty = self.cursor
+    def _place_at(self, tx, ty):
+        if not (0 <= tx < W and 0 <= ty < H):
+            return
         m = MODES[self.mode]
         if m == "tile":
             self.grid[ty][tx] = TILE_PAL[self.sel][0]
@@ -127,7 +132,7 @@ class EditorScene(Scene):
             kind = ENT_PAL[self.sel]
             self.ents = [e for e in self.ents if not (e[1] == tx and e[2] == ty)]
             if kind == "mplat":
-                self.ents.append(["mplat", tx, ty, tx + 4, ty, 3])
+                self.ents.append(["mplat", tx, ty, min(W - 1, tx + 4), ty, 3])
             elif kind == "flyer":
                 self.ents.append(["flyer", tx, ty, 6])
             elif kind == "boss":
@@ -139,16 +144,63 @@ class EditorScene(Scene):
             self.props = [p for p in self.props if not (p[1] == tx and p[2] == ty)]
             self.props.append([name, tx, ty])
 
-    def _erase(self):
-        tx, ty = self.cursor
+    def _erase_at(self, tx, ty):
+        if not (0 <= tx < W and 0 <= ty < H):
+            return
         before = len(self.ents) + len(self.props)
         self.ents = [e for e in self.ents if not (e[1] == tx and e[2] == ty)]
         self.props = [p for p in self.props if not (p[1] == tx and p[2] == ty)]
         if len(self.ents) + len(self.props) == before:
             self.grid[ty][tx] = "."
 
+    def _hovered(self):
+        mvx, mvy = self.game.mouse_virtual()
+        if mvy < HUD_H:
+            return None
+        tx = int((mvx + self.cam[0]) // TILE)
+        ty = int((mvy + self.cam[1]) // TILE)
+        if 0 <= tx < W and 0 <= ty < H:
+            return (tx, ty)
+        return None
+
     # --- Events ------------------------------------------------------
     def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                h = self._hovered()
+                if h:
+                    self.cursor = list(h)
+                    self._place_at(*h)
+                    self.painting = "place"
+            elif event.button == 3:
+                h = self._hovered()
+                if h:
+                    self.cursor = list(h)
+                    self._erase_at(*h)
+                    self.painting = "erase"
+            elif event.button == 2:
+                self.panning = True
+            return
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button in (1, 3):
+                self.painting = None
+            elif event.button == 2:
+                self.panning = False
+            return
+        if event.type == pygame.MOUSEMOTION:
+            if self.panning:
+                s = self.game.view_transform()[0] or 1
+                self.cam[0] -= event.rel[0] / s
+                self._clamp_cam()
+            elif self.painting:
+                h = self._hovered()
+                if h:
+                    self.cursor = list(h)
+                    (self._place_at if self.painting == "place" else self._erase_at)(*h)
+            return
+        if event.type == pygame.MOUSEWHEEL:
+            self.sel = (self.sel + (1 if event.y > 0 else -1)) % self._pal_len()
+            return
         if event.type != pygame.KEYDOWN:
             return
         k = event.key
@@ -162,9 +214,9 @@ class EditorScene(Scene):
         elif k in (pygame.K_DOWN, pygame.K_s):
             cur[1] = min(H - 1, cur[1] + 1)
         elif k == pygame.K_SPACE:
-            self._place()
+            self._place_at(*cur)
         elif k in (pygame.K_BACKSPACE, pygame.K_DELETE):
-            self._erase()
+            self._erase_at(*cur)
         elif k == pygame.K_TAB:
             self.mode = (self.mode + 1) % len(MODES)
             self.sel = 0
@@ -175,7 +227,7 @@ class EditorScene(Scene):
         elif k == pygame.K_y:
             self.theme = (self.theme + 1) % len(THEMES)
         elif k == pygame.K_b:
-            self.spawn = list(self.cursor)
+            self.spawn = list(cur)
             self._flash("Startpunkt gesetzt")
         elif k == pygame.K_F5:
             self._save()
@@ -191,46 +243,51 @@ class EditorScene(Scene):
             from .menu import MenuScene
             self.game.scenes.switch(MenuScene(self.game))
 
-    def _pal_len(self):
-        return [len(TILE_PAL), len(ENT_PAL), len(PROP_PAL)][self.mode]
+    def _clamp_cam(self):
+        self.cam[0] = max(0.0, min(self.cam[0], W * TILE - VIRTUAL_W))
+        self.cam[1] = max(0.0, min(self.cam[1], max(0, H * TILE - VIRTUAL_H)))
 
     def update(self, dt):
-        self.camera.update(self._cur_rect(), dt)
+        # Kamera zum Cursor scrollen (Tastatur)
+        cx = self.cursor[0] * TILE
+        if cx - self.cam[0] < 5 * TILE:
+            self.cam[0] = cx - 5 * TILE
+        elif cx - self.cam[0] > VIRTUAL_W - 6 * TILE:
+            self.cam[0] = cx - (VIRTUAL_W - 6 * TILE)
+        self._clamp_cam()
         if self.status_t > 0:
             self.status_t -= dt
 
     # --- Zeichnen ----------------------------------------------------
     def draw(self, surface):
         surface.fill((60, 80, 110))
-        cam = self.camera
-        ox, oy = cam.offset
+        ox, oy = int(self.cam[0]), int(self.cam[1])
         ts = self.game.assets.tileset
-        # Kacheln
+        x0 = max(0, ox // TILE)
+        x1 = min(W - 1, (ox + VIRTUAL_W) // TILE)
         for ty in range(H):
-            for tx in range(W):
-                ch = self.grid[ty][tx]
-                tid = CHAR_TO_TILE.get(ch, 0)
+            for tx in range(x0, x1 + 1):
+                tid = CHAR_TO_TILE.get(self.grid[ty][tx], 0)
                 if tid:
                     surface.blit(ts[tid], (tx * TILE - ox, ty * TILE - oy))
-        # Gitter
-        for tx in range(W + 1):
+        for tx in range(x0, x1 + 2):
             x = tx * TILE - ox
-            if 0 <= x <= VIRTUAL_W:
-                pygame.draw.line(surface, (255, 255, 255, 30), (x, 0), (x, VIRTUAL_H))
-        # Props
+            pygame.draw.line(surface, (255, 255, 255, 30), (x, 0), (x, VIRTUAL_H))
         for name, tx, ty in self.props:
             self._marker(surface, tx, ty, PROP_COLOR, name[:2], ox, oy)
-        # Entities
         for e in self.ents:
             col, code = ENT_STYLE.get(e[0], ((220, 220, 220), "?"))
             self._marker(surface, e[1], e[2], col, code, ox, oy)
-        # Startpunkt
         sx, sy = self.spawn
         pygame.draw.rect(surface, (90, 230, 120),
                          (sx * TILE - ox, sy * TILE - oy, TILE, TILE), 2)
-        st = self.small.render("Start", True, (90, 230, 120))
-        surface.blit(st, (sx * TILE - ox, sy * TILE - oy - 16))
-        # Cursor
+        surface.blit(self.small.render("Start", True, (90, 230, 120)),
+                     (sx * TILE - ox, sy * TILE - oy - 16))
+        # Cursor / Maus-Hover
+        hov = self._hovered()
+        if hov:
+            pygame.draw.rect(surface, (120, 200, 255),
+                             (hov[0] * TILE - ox, hov[1] * TILE - oy, TILE, TILE), 1)
         cx, cy = self.cursor
         pygame.draw.rect(surface, (255, 230, 90),
                          (cx * TILE - ox, cy * TILE - oy, TILE, TILE), 2)
@@ -244,23 +301,18 @@ class EditorScene(Scene):
         surface.blit(img, img.get_rect(center=r.center))
 
     def _hud(self, surface):
-        bar = pygame.Surface((VIRTUAL_W, 30), pygame.SRCALPHA)
-        bar.fill((10, 14, 28, 200))
+        bar = pygame.Surface((VIRTUAL_W, HUD_H), pygame.SRCALPHA)
+        bar.fill((10, 14, 28, 210))
         surface.blit(bar, (0, 0))
         m = MODES[self.mode]
-        if m == "tile":
-            sel = TILE_PAL[self.sel][1]
-        elif m == "entity":
-            sel = ENT_PAL[self.sel]
-        else:
-            sel = PROP_PAL[self.sel]
+        sel = (TILE_PAL[self.sel][1] if m == "tile"
+               else ENT_PAL[self.sel] if m == "entity" else PROP_PAL[self.sel])
         info = f"Modus: {m}  |  Auswahl: {sel}  |  Theme: {THEMES[self.theme]}  |  {self.name}"
-        surface.blit(self.font.render(info, True, WHITE), (8, 6))
-        help1 = ("Pfeile/WASD bewegen · Leertaste setzen · Entf löschen · Tab Modus · "
-                 "Q/E Auswahl · Y Theme · B Start · F5 speichern · P testen · L neu · ESC Menü")
-        h = self.small.render(help1, True, (210, 220, 240))
+        surface.blit(self.font.render(info, True, WHITE), (8, 5))
+        help1 = ("Maus: links setzen · rechts löschen · Rad Auswahl · Mitte ziehen schwenken   "
+                 "|   Tab Modus · Y Theme · B Start · F5 speichern · P testen · ESC Menü")
         surface.blit(self.small.render(help1, True, UI_SHADOW), (9, VIRTUAL_H - 21))
-        surface.blit(h, (8, VIRTUAL_H - 22))
+        surface.blit(self.small.render(help1, True, (210, 220, 240)), (8, VIRTUAL_H - 22))
         if self.status_t > 0:
-            s = self.font.render(self.status, True, (255, 236, 130))
+            s = self.small.render(self.status, True, (255, 236, 130))
             surface.blit(s, s.get_rect(center=(VIRTUAL_W // 2, 44)))

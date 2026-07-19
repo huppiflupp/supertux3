@@ -37,6 +37,9 @@ class MenuScene(Scene):
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_e:
             from .editor import EditorScene
             self.game.scenes.switch(EditorScene(self.game))
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_o:
+            from .options import OptionsScene
+            self.game.scenes.switch(OptionsScene(self.game))
 
     def update(self, dt: float) -> None:
         self.t += dt
@@ -56,7 +59,7 @@ class MenuScene(Scene):
             self._center(surface, "ENTER = Spielen", self.font, WHITE, VIRTUAL_H - 130)
         self._center(surface, "Pfeile/WASD bewegen · Leertaste springen · Gegner stampfen",
                      self.font, (220, 230, 245), VIRTUAL_H - 84)
-        self._center(surface, "E = Editor   ·   M = Ton   ·   ESC = Beenden",
+        self._center(surface, "E = Editor   ·   O = Optionen   ·   ESC = Beenden",
                      self.font, (200, 210, 230), VIRTUAL_H - 48)
 
     def _center(self, surface, text, font, color, y) -> None:

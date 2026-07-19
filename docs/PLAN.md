@@ -59,11 +59,22 @@ Parallax, Zielobjekt), nicht den Code.
       7 eigenständige Tracks inkl. treibendem Boss-Theme
 - [x] **Intro-Sequenz** vor dem Menü (animiert, überspringbar)
 
-### M5 — Ideen (offen)
-- [ ] Maus-Unterstützung im Editor; mehr Kachel-/Deko-Vielfalt, Schrägen
-- [ ] Welt-Karte statt Liste; Story-Cutscenes zwischen Welten
-- [ ] Mehr Gegner-/Boss-Typen; Zeitangriff-Modus, Online-Bestenliste
-- [ ] Steam-Deck-/Controller-Feinschliff, Optionsmenü (Tastenbelegung)
+### M5 — Distribution & Feinschliff ✅
+- [x] **Optionsmenü** (`scenes/options.py`): Grafik, Bildrate, Vollbild,
+      Lautstärke, Ton – persistent im Speicherstand
+- [x] **Grafik-/Performance-Modi**: „schnell" (nearest) vs „glatt" (smooth),
+      FPS 30/60; ARM-Autoprofil; CLI `--quality/--fps/--fullscreen/--level`
+- [x] **Maus-Editor** + freie Kamera; Custom-Level in schreibbarem
+      User-Verzeichnis (auch bei read-only Installation)
+- [x] **Paketierung**: pyproject, Makefile-Install, Launcher, Desktop-Eintrag,
+      App-Icon, AppStream-Metainfo, **Flatpak/RPM/DEB**, Nutzer-Installer
+- [x] **Raspberry-Pi-400-Port**: Python-3.11-tauglich, ARM-Erkennung,
+      KMSDRM/Perf-Doku (`docs/pi400.md`)
+
+### M6 — Ideen (offen)
+- [ ] Welt-Karte statt Liste; Story-Cutscenes; Tastenbelegung frei konfigurierbar
+- [ ] Mehr Gegner-/Boss-Typen, Schrägen im Tileset; Zeitangriff-Modus
+- [ ] Vollständig offline-reproduzierbarer Flatpak (vendored Wheels)
 
 ## Asset-Strategie
 - **Spielfertige Sprites** (Held, Gegner, Kacheln, Münzen): prozedural (PIL),

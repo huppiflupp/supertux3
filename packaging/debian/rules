@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+%:
+	dh $@
+
+override_dh_auto_build:
+	# reines Python – nichts zu kompilieren
+
+override_dh_auto_install:
+	make install PREFIX=/usr DESTDIR=debian/supertux3
