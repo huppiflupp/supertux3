@@ -79,9 +79,24 @@ Parallax, Zielobjekt), nicht den Code.
       Links/Rechts/Springen/Ducken frei belegbar, persistent; Standard-Reset;
       Zugang über Optionen → Steuerung.
 
-### M7 — Ideen (offen)
-- [ ] Story-Cutscenes zwischen Welten; abzweigende Kartenpfade/Geheimlevel
-- [ ] Mehr Gegner-/Boss-Typen, Schrägen im Tileset; Zeitangriff-Modus
+### M7 — Welten, Buddies, Dynamik ✅
+- [x] Neue Welten **Ägypten**, **Weltraum**, **Großstadt** (je 3 Level, eigene
+      Kacheln/Props/Gegner/Musik) → **24 Level / 8 Welten**
+- [x] Animierte Super-Mario-Weltkarte mit Themen-Kulissen + Teasern
+- [x] Buddy-System: **Schildkröte** (Schild), **Giraffe** (Brücke),
+      **kämpfender Freund** (wirft Fische)
+- [x] Neue Powerups: Fisch-Wurf, Fischregen; zerstörbare Loot-Boxen;
+      schießender Gegner (Feuerblume)
+- [x] Dynamik: **Wetter** (Regen/Schnee/Nebel) + **Wind-Physik**
+- [x] **Schrägen** im Tileset (45°) mit Auto-Step
+- [x] **Geheimlevel** über versteckten Ausgang
+- [x] Pinguin-Rework (Flossen), HUD-Piktogramme, Musikauswahl
+
+### M8 — Ideen (offen)
+- [ ] **ComfyUI/Blender-Prerender** von Held/Deko + abgeleitete Animation
+      (sobald die GPU frei ist — vor jedem Lauf `nvidia-smi` prüfen!)
+- [ ] Story-Cutscenes zwischen Welten; abzweigende Kartenpfade; Welt-2-Boss
+- [ ] Mehr Boss-Typen; Zeitangriff-Modus; Online-Bestenliste
 - [ ] Vollständig offline-reproduzierbarer Flatpak (vendored Wheels)
 
 ## Asset-Strategie
