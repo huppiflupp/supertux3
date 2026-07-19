@@ -75,6 +75,19 @@ class Pen:
     def arc(self, box, a, b, width=1, **kw):
         self.d.arc(self._b(box), a, b, width=int(width * self.ss), **kw)
 
+    def cyl(self, box, base, hi, lo, light=0.34):
+        """Zylindrische Schattierung über die Breite: Lichtstreifen bei `light`,
+        dunkle Ränder – für Stämme/Säulen/Kaktus."""
+        import math
+        x0, y0, x1, y1 = [v * self.ss for v in box]
+        n = max(1, int(x1 - x0))
+        for i in range(n):
+            f = i / max(1, n - 1)
+            v = math.cos((f - light) * math.pi)   # 1 am Lichtstreifen, -1 am Rand
+            col = _lerp(base, hi, v * 0.75) if v > 0 else _lerp(base, lo, -v)
+            x = x0 + i
+            self.d.line([(x, y0), (x, y1)], fill=col)
+
     def result(self) -> Image.Image:
         return self.img.resize((self.w, self.h), Image.LANCZOS)
 
@@ -108,6 +121,50 @@ def _sheet(frames, fw, fh):
     for i, f in enumerate(frames):
         sheet.paste(f, (i * fw, 0), f)
     return sheet
+
+
+# --- 3D-Schattierung: Verläufe für mehr Plastizität ---------------------
+def _lerp(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3)) + (255,)
+
+
+def _shade_sphere(img, light=95, dark=95):
+    """Kugel-Volumen: weiches Licht oben-links + Schatten unten-rechts
+    (auf die Silhouette maskiert)."""
+    img = img.convert("RGBA")
+    w, h = img.size
+    hi = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(hi).ellipse([w * 0.06, h * 0.02, w * 0.62, h * 0.58],
+                               fill=(255, 255, 255, light))
+    hi = hi.filter(ImageFilter.GaussianBlur(max(1, w * 0.12)))
+    sh = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(sh).ellipse([w * 0.42, h * 0.5, w * 1.02, h * 1.06],
+                               fill=(0, 0, 0, dark))
+    sh = sh.filter(ImageFilter.GaussianBlur(max(1, w * 0.14)))
+    out = Image.alpha_composite(Image.alpha_composite(img, hi), sh)
+    out.putalpha(img.getchannel("A"))
+    return out
+
+
+def _shade_v(img, top=46, bot=60):
+    """Aufrechtes Volumen / Bodenkacheln: heller Kopf, dunkler Fuß."""
+    img = img.convert("RGBA")
+    w, h = img.size
+    ov = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ov)
+    for y in range(h):
+        f = y / max(1, h - 1)
+        if f < 0.42:
+            c = (255, 255, 255, int(top * (1 - f / 0.42)))
+        elif f > 0.58:
+            c = (0, 0, 0, int(bot * ((f - 0.58) / 0.42)))
+        else:
+            c = (0, 0, 0, 0)
+        d.line([(0, y), (w, y)], fill=c)
+    out = Image.alpha_composite(img, ov)
+    out.putalpha(img.getchannel("A"))
+    return out
 
 
 # =========================================================================
@@ -456,6 +513,8 @@ def gen_tileset():
     p.line([(0, 0), (T, T)], width=1, fill=(120, 214, 96, 255))
     tiles.append(p.result())
 
+    # 3D-Look: leichter Kopflicht/Fußschatten-Verlauf auf jede Kachel (nicht 0=leer)
+    tiles = [tiles[0]] + [_shade_v(t, top=34, bot=44) for t in tiles[1:]]
     _save(_sheet(tiles, T, T), "tiles", "tileset.png")
 
 
@@ -473,7 +532,7 @@ def gen_props():
         p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=G)
     p.ellipse([18, 8, 33, 20], fill=GHI)
     p.ellipse([10, 26, 40, 34], fill=GLO)
-    _save(p.result(), "props", "bush.png")
+    _save(_shade_sphere(p.result()), "props", "bush.png")
 
     # Wolke (96x48)
     p = Pen(96, 48)
@@ -484,18 +543,17 @@ def gen_props():
     p.ellipse([20, 38, 78, 48], fill=(224, 232, 244, 220))
     _save(p.result(), "props", "cloud.png")
 
-    # Baum (64x96)
+    # Baum (64x96) – Stamm als Rundholz (zylindrisch), Krone kugelig
     p = Pen(64, 96)
-    p.rounded([27, 54, 37, 96], 3, fill=(120, 82, 50, 255))
-    p.line([(30, 58), (30, 92)], width=1.4, fill=(96, 62, 36, 255))
-    p.line([(34, 58), (34, 92)], width=1, fill=(146, 104, 66, 255))
+    p.rounded([26, 54, 38, 96], 4, fill=OUT)
+    p.cyl([27, 55, 37, 96], (120, 82, 50), (170, 126, 82), (78, 50, 28))
     for cx, cy, r in [(20, 34, 18), (44, 34, 18), (32, 20, 20), (32, 44, 20)]:
         p.ellipse([cx - r - 1, cy - r - 1, cx + r + 1, cy + r + 1], fill=OUT)
     for cx, cy, r in [(20, 34, 18), (44, 34, 18), (32, 20, 20), (32, 44, 20)]:
         p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=G)
     p.ellipse([22, 8, 42, 26], fill=GHI)
     p.ellipse([14, 44, 50, 62], fill=GLO)
-    _save(p.result(), "props", "tree.png")
+    _save(_shade_sphere(p.result()), "props", "tree.png")
 
     # Zielfahne (32x96)
     p = Pen(32, 96)
@@ -965,7 +1023,7 @@ def gen_egypt_props():
         hw = int(46 * k / 7)
         p.line([(48 - hw, yy), (48 + hw, yy)], width=1, fill=(160, 128, 78, 255))
     p.poly([(48, 2), (44, 14), (52, 14)], fill=SAND_HI)   # Spitzenglanz
-    _save(p.result(), "props", "pyramid.png")
+    _save(_shade_v(p.result(), top=30, bot=48), "props", "pyramid.png")
 
     # Sphinx (96x56)
     p = Pen(96, 56)
@@ -983,9 +1041,10 @@ def gen_egypt_props():
 
     # Palme (56x88)
     p = Pen(56, 88)
-    p.rounded([24, 30, 32, 88], 3, fill=(150, 110, 66, 255))
-    for yy in range(34, 84, 8):
-        p.line([(24, yy), (32, yy)], width=1, fill=(120, 86, 50, 255))
+    p.rounded([23, 30, 33, 88], 3, fill=OUT)
+    p.cyl([24, 31, 32, 88], (150, 110, 66), (196, 156, 104), (104, 74, 42))
+    for yy in range(36, 84, 8):
+        p.line([(24, yy), (32, yy)], width=1, fill=(120, 86, 50, 200))
     GRN = (78, 168, 82, 255); GRN_LO = (56, 134, 64, 255)
     for ang, ln in [(-70, 26), (-30, 30), (10, 30), (50, 28), (90, 22), (130, 26)]:
         ex = 28 + ln * _c(ang); ey = 30 + ln * _s(ang) * 0.6 - 6
@@ -995,13 +1054,15 @@ def gen_egypt_props():
         p.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(150, 100, 50, 255))  # Datteln
     _save(p.result(), "props", "palm.png")
 
-    # Kaktus (32x52)
+    # Kaktus (32x52) – zylindrische Glieder
     p = Pen(32, 52)
-    CAC = (72, 150, 88, 255); CAC_LO = (52, 120, 70, 255)
-    p.rounded([12, 6, 20, 52], 4, fill=CAC)
-    p.rounded([4, 20, 12, 34], 4, fill=CAC); p.rounded([4, 20, 12, 24], 3, fill=CAC)
-    p.rounded([20, 14, 28, 28], 4, fill=CAC)
-    p.line([(16, 8), (16, 50)], width=1, fill=CAC_LO)
+    CAC = (72, 150, 88); CAC_HI = (110, 196, 118); CAC_LO = (48, 116, 66)
+    p.rounded([11, 5, 21, 52], 5, fill=(20, 60, 34, 255))
+    p.cyl([12, 6, 20, 52], CAC, CAC_HI, CAC_LO)
+    p.rounded([4, 20, 12, 34], 4, fill=(20, 60, 34, 255))
+    p.cyl([5, 21, 11, 33], CAC, CAC_HI, CAC_LO)
+    p.rounded([20, 14, 28, 28], 4, fill=(20, 60, 34, 255))
+    p.cyl([21, 15, 27, 27], CAC, CAC_HI, CAC_LO)
     for yy in range(10, 50, 6):
         for sx2 in (11, 21):
             p.ellipse([sx2 - 0.6, yy - 0.6, sx2 + 0.6, yy + 0.6], fill=(230, 240, 200, 255))
@@ -1106,7 +1167,7 @@ def gen_space_props():
     p.ellipse([10, 12, 44, 44], fill=(120, 176, 232, 255))
     p.ellipse([30, 34, 52, 52], fill=(78, 128, 190, 255))
     p.ellipse([1, 26, 63, 42], outline=(220, 210, 160, 255), width=3)  # Ring
-    _save(p.result(), "props", "planet.png")
+    _save(_shade_sphere(p.result(), light=80, dark=70), "props", "planet.png")
 
     # Meteor (28x24)
     p = Pen(28, 24)
@@ -1114,7 +1175,7 @@ def gen_space_props():
     p.ellipse([3, 4, 23, 20], fill=(140, 130, 122, 255))
     for cx, cy, r in [(9, 9, 2.5), (17, 14, 2), (13, 17, 1.6)]:
         p.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(96, 88, 84, 255))
-    _save(p.result(), "props", "meteor.png")
+    _save(_shade_sphere(p.result()), "props", "meteor.png")
 
 
 def draw_alien(step: int) -> Image.Image:
