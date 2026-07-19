@@ -40,6 +40,11 @@ class Player(Entity):
         self.coins = 0
         self.scale_x = 1.0
         self.scale_y = 1.0
+        self.can_throw = False
+        self.throw_cd = 0.0
+        self.throw_t = 0.0
+        self.prev_throw = False
+        self.bumped = False        # Kopf gegen etwas gestoßen (für Loot-Boxen)
         # Ereignis-Flags (von der Szene für Effekte ausgelesen)
         self.ev_jumped = False
         self.ev_landed = False
@@ -54,6 +59,7 @@ class Player(Entity):
             "jump": Animation(frames["jump"], fps=1),
             "fall": Animation(frames["fall"], fps=1),
             "duck": Animation(frames["duck"], fps=1),
+            "throw": Animation(frames["throw"], fps=1),
         }
 
     def _set_power(self, power: str):
@@ -118,15 +124,25 @@ class Player(Entity):
             self.jump_active = False
         self.prev_jump = jump_held
 
+        # Werfen (Fisch), wenn Powerup aktiv
+        self.throw_cd = max(0.0, self.throw_cd - dt)
+        self.throw_t = max(0.0, self.throw_t - dt)
+        throw_held = any(keys[k] for k in km.get("throw", [])) or controls.want_throw(js)
+        if throw_held and not self.prev_throw and self.can_throw and self.throw_cd <= 0:
+            self._throw(level)
+        self.prev_throw = throw_held
+
         self.apply_gravity(dt)
         pre_vy = self.vy
-        self.move_and_collide(level.tilemap, dt, level.platform_rects())
+        self.move_and_collide(level.tilemap, dt, level.solid_entity_rects())
 
         # gelandet?
         if not was_ground and self.on_ground and pre_vy > 120:
             self.ev_landed = True
             self.land_vy = pre_vy
             self.scale_x, self.scale_y = 1.25, 0.78
+        # Kopf angestoßen (für Loot-Boxen)
+        self.bumped = pre_vy < -1 and self.vy == 0 and not self.on_ground
 
         if self.invuln > 0:
             self.invuln -= dt
@@ -146,10 +162,27 @@ class Player(Entity):
             self.state = "walk"
         else:
             self.state = "idle"
+        if self.throw_t > 0:
+            self.state = "throw"
         anim = self.anims[self.state]
         if self.state == "walk":
             anim.frame_time = 1.0 / max(6.0, 4.0 + abs(self.vx) * 0.05)
         anim.update(dt)
+
+    def _throw(self, level) -> None:
+        from .projectiles import Projectile
+        fish = self.assets.fish
+        fx = self.cx + self.facing * (self.w / 2) - fish.get_width() / 2
+        proj = Projectile(fx, self.cy - 6, self.facing * 300 + self.vx * 0.3, -180.0,
+                          fish, grav=900.0, life=3.0, spin=True)
+        level.friendly.append(proj)
+        self.throw_cd = 0.35
+        self.throw_t = 0.22
+        self.scale_x, self.scale_y = 1.15, 0.9
+        level.game.audio.play("throw")
+
+    def give_throw(self) -> None:
+        self.can_throw = True
 
     # --- Treffer / Kampf --------------------------------------------
     def bounce(self, strength: float = 1.0) -> None:
@@ -161,6 +194,7 @@ class Player(Entity):
         """Gibt 'die', 'shrink' oder 'none' zurück."""
         if self.invuln > 0 or self.dead:
             return "none"
+        self.can_throw = False       # Powerup geht bei Treffer verloren
         if self.power == "big":
             self._set_power("small")
             self.invuln = 1.6

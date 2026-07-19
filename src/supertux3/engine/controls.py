@@ -21,14 +21,18 @@ _KEY_NAV = {
 BTN_A, BTN_B, BTN_BACK, BTN_START = 0, 1, 6, 7
 
 # --- Frei belegbare Spiel-Aktionen --------------------------------------
-ACTIONS = ["left", "right", "jump", "duck"]
-ACTION_LABEL = {"left": "Links", "right": "Rechts", "jump": "Springen", "duck": "Ducken"}
+ACTIONS = ["left", "right", "jump", "duck", "throw"]
+ACTION_LABEL = {"left": "Links", "right": "Rechts", "jump": "Springen",
+                "duck": "Ducken", "throw": "Werfen"}
 DEFAULT_KEYS = {
     "left": [pygame.K_LEFT, pygame.K_a],
     "right": [pygame.K_RIGHT, pygame.K_d],
     "jump": [pygame.K_SPACE, pygame.K_UP, pygame.K_w],
     "duck": [pygame.K_DOWN, pygame.K_s],
+    "throw": [pygame.K_f, pygame.K_LCTRL],
 }
+
+BTN_X = 2  # Wurf am Gamepad
 
 
 def load_keys(save_data: dict) -> dict:
@@ -98,6 +102,16 @@ def want_jump(joysticks) -> bool:
     for js in joysticks:
         try:
             if js.get_numbuttons() > BTN_A and js.get_button(BTN_A):
+                return True
+        except pygame.error:
+            continue
+    return False
+
+
+def want_throw(joysticks) -> bool:
+    for js in joysticks:
+        try:
+            if js.get_numbuttons() > BTN_X and js.get_button(BTN_X):
                 return True
         except pygame.error:
             continue

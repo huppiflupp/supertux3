@@ -18,8 +18,13 @@ class OptionsScene(Scene):
         self.font = pygame.font.Font(None, 40)
         self.small = pygame.font.Font(None, 26)
         self.sel = 0
-        self.items = ["Grafik", "Bildrate", "Vollbild", "Musik", "Ton",
+        self.items = ["Grafik", "Bildrate", "Vollbild", "Musik", "Musikstück", "Ton",
                       "Steuerung", "Zurück"]
+
+    TRACKS = [None, "level1", "level2", "level3", "ice", "cave", "boss", "title"]
+    TRACK_LABEL = {None: "Automatisch", "level1": "Grüne Hügel", "level2": "Sonnenuntergang",
+                   "level3": "Nacht", "ice": "Eis", "cave": "Höhle", "boss": "Boss",
+                   "title": "Titel"}
 
     # --- Werte -------------------------------------------------------
     def _value(self, item):
@@ -34,6 +39,8 @@ class OptionsScene(Scene):
             return f"{int(round(g.audio.music_volume * 100))} %"
         if item == "Ton":
             return "Aus (stumm)" if g.audio.muted else "An"
+        if item == "Musikstück":
+            return self.TRACK_LABEL.get(g.music_choice, "Automatisch")
         return ""
 
     def _change(self, item, d):
@@ -48,6 +55,11 @@ class OptionsScene(Scene):
             g.audio.change_music_volume(0.1 * d)
         elif item == "Ton":
             g.audio.toggle_mute()
+        elif item == "Musikstück":
+            i = (self.TRACKS.index(g.music_choice) + d) % len(self.TRACKS)
+            g.music_choice = self.TRACKS[i]
+            preview = f"{g.music_choice}.ogg" if g.music_choice else "title.ogg"
+            g.audio.play_music(preview)
         g.save_progress()
 
     def _leave(self):

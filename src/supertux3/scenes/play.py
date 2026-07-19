@@ -1,15 +1,19 @@
 """Die eigentliche Spiel-Szene mit Effekten, Power-Ups und Progression."""
 from __future__ import annotations
 
+import random
+
 import pygame
 
 from ..engine.scene import Scene
 from ..engine.camera import Camera
 from ..engine.particles import Particles
 from ..world.level import Level
+from ..entities.collectible import Coin, GrowItem, Star, FishItem
+from ..entities.projectiles import Projectile
 from ..settings import (
     VIRTUAL_W, VIRTUAL_H, SKY_TOP, SKY_BOTTOM, WHITE, UI_SHADOW,
-    SPRING_SPEED, LEVEL_FILES,
+    SPRING_SPEED, LEVEL_FILES, TILE,
 )
 
 
@@ -43,9 +47,20 @@ class PlayScene(Scene):
         self.elapsed = 0.0          # Spielzeit (für Bestzeit)
         self.paused = False
         self.ride = None            # aktuell getragene Plattform
+        self.rain_t = 0.0           # Fischregen-Restzeit
+        self.rain_spawn = 0.0
+        self.plane_x = -80.0
+        def _icon(img, h=22):
+            w = max(1, round(img.get_width() * h / img.get_height()))
+            return pygame.transform.smoothscale(img, (w, h))
+        A = self.game.assets
+        self.icons = {"coin": _icon(A.coin[0]), "heart": _icon(A.heart),
+                      "star": _icon(A.star), "clock": _icon(A.clock),
+                      "fish": _icon(A.fish, 20)}
         self._build_background()
-        if self.level.music:
-            self.game.audio.play_music(self.level.music)
+        track = f"{self.game.music_choice}.ogg" if self.game.music_choice else self.level.music
+        if track:
+            self.game.audio.play_music(track)
 
     def _build_background(self):
         self.sky = _sky_gradient(VIRTUAL_W, VIRTUAL_H)
@@ -119,12 +134,24 @@ class PlayScene(Scene):
                 sp.update(dt, lvl)
             for pr in lvl.projectiles:
                 pr.update(dt, lvl)
+            for fr in lvl.friendly:
+                fr.update(dt, lvl)
+            for bx in lvl.boxes:
+                bx.update(dt, lvl)
+            for fi in lvl.fish_items:
+                fi.update(dt, lvl)
+            for ri in lvl.rain_items:
+                ri.update(dt, lvl)
+            if self.rain_t > 0:
+                self._update_fish_rain(dt)
             self.elapsed += dt
 
             self._player_effects()
             self._collisions()
             lvl.enemies = [e for e in lvl.enemies if not getattr(e, "remove", False)]
             lvl.projectiles = [pr for pr in lvl.projectiles if not getattr(pr, "remove", False)]
+            lvl.friendly = [fr for fr in lvl.friendly if not getattr(fr, "remove", False)]
+            lvl.boxes = [bx for bx in lvl.boxes if not getattr(bx, "remove", False)]
 
             if lvl.player.y > lvl.height_px + 80:
                 self._die()
@@ -210,6 +237,61 @@ class PlayScene(Scene):
                 rem.append(st)
         lvl.stars = rem
 
+        # Fisch-Powerup
+        rem = []
+        for fi in lvl.fish_items:
+            if prect.colliderect(fi.rect):
+                p.give_throw()
+                self.particles.sparkle(fi.cx, fi.cy, color=(150, 210, 245))
+                self.particles.text(fi.cx, fi.y, "Fisch-Wurf!", (150, 210, 245), self.font)
+                self.game.audio.play("grow")
+            else:
+                rem.append(fi)
+        lvl.fish_items = rem
+
+        # Fischregen-Powerup
+        rem = []
+        for ri in lvl.rain_items:
+            if prect.colliderect(ri.rect):
+                self._start_fish_rain()
+                self.particles.sparkle(ri.cx, ri.cy, color=(150, 210, 245), n=26)
+                self.particles.text(ri.cx, ri.y, "FISCHREGEN!", (255, 236, 120), self.big_font)
+            else:
+                rem.append(ri)
+        lvl.rain_items = rem
+
+        # Loot-Box von unten anschlagen
+        if p.bumped:
+            for box in lvl.boxes:
+                if getattr(box, "remove", False):
+                    continue
+                if abs(box.rect.bottom - prect.top) <= 8 and \
+                        box.rect.left < prect.right and box.rect.right > prect.left:
+                    box.remove = True
+                    self._pop_loot(box)
+                    self.particles.stomp(box.rect.centerx, box.rect.bottom)
+                    self.camera.add_shake(2.5, 0.15)
+                    self.game.audio.play("stomp")
+                    break
+
+        # geworfene/regnende Fische plätten Gegner (und knacken Boxen)
+        for fr in lvl.friendly:
+            for e in lvl.enemies:
+                if getattr(e, "squashed", False) or getattr(e, "remove", False):
+                    continue
+                if fr.rect.colliderect(e.rect):
+                    self._defeat_enemy(e)
+                    fr.remove = True
+                    break
+            if not fr.remove:
+                for box in lvl.boxes:
+                    if not getattr(box, "remove", False) and fr.rect.colliderect(box.rect):
+                        box.remove = True
+                        self._pop_loot(box)
+                        self.particles.stomp(box.rect.centerx, box.rect.centery)
+                        fr.remove = True
+                        break
+
         # Sprungfedern
         for sp in lvl.springs:
             if prect.colliderect(sp.rect) and p.vy > 0 and prect.bottom <= sp.rect.top + 18:
@@ -292,6 +374,59 @@ class PlayScene(Scene):
         self.particles.sparkle(p.rect.centerx, p.rect.centery, color=(255, 240, 140), n=30)
         self.game.audio.play("win")
 
+    def _defeat_enemy(self, e):
+        if getattr(e, "is_boss", False):
+            if e.hit() and e.defeated:
+                self.particles.poof(e.rect.centerx, e.rect.centery, color=(200, 230, 255), n=40)
+                self.camera.add_shake(8.0, 0.5)
+                self._win()
+        elif hasattr(e, "stomp"):
+            e.stomp()
+        else:
+            e.remove = True
+        self.particles.stomp(e.rect.centerx, e.rect.centery)
+        self.particles.text(e.rect.centerx, e.rect.top, "+100", WHITE, self.font)
+        self.game.audio.play("stomp")
+
+    def _pop_loot(self, box):
+        A = self.game.assets
+        cx = box.rect.centerx
+        ty = box.rect.top - TILE
+        r = random.random()
+        if r < 0.5:
+            self.level.coins.append(Coin(cx - 12, ty, A))
+            self.level.total_coins += 1
+        elif r < 0.72:
+            self.level.items.append(GrowItem(cx - A.item_grow.get_width() // 2, ty, A))
+        elif r < 0.88:
+            self.level.fish_items.append(FishItem(cx - A.fish.get_width() // 2, ty, A))
+        else:
+            self.level.stars.append(Star(cx - 12, ty, A))
+            self.level.total_stars += 1
+        self.particles.sparkle(box.rect.centerx, box.rect.top, n=14)
+
+    def _start_fish_rain(self):
+        self.rain_t = 7.0
+        self.rain_spawn = 0.0
+        self.plane_x = -80.0
+        self.game.audio.play("win")
+
+    def _update_fish_rain(self, dt):
+        self.rain_t -= dt
+        self.plane_x += 300 * dt
+        if self.plane_x > VIRTUAL_W + 80:
+            self.plane_x = -80.0
+        self.rain_spawn -= dt
+        if self.rain_spawn <= 0:
+            self.rain_spawn = 0.1
+            A = self.game.assets
+            wx = self.camera.x + self.plane_x + 20
+            self.level.friendly.append(
+                Projectile(wx, self.camera.y - 20, random.uniform(-30, 30), 80.0,
+                           A.fish, grav=520.0, life=6.0, spin=True))
+        if self.rain_t < 0:
+            self.rain_t = 0.0
+
     def _die(self):
         if self.mode == "dead":
             return
@@ -365,6 +500,8 @@ class PlayScene(Scene):
         self.level.tilemap.draw(surface, cam)
         for pf in self.level.platforms:
             pf.draw(surface, cam)
+        for bx in self.level.boxes:
+            bx.draw(surface, cam)
         for cp in self.level.checkpoints:
             cp.draw(surface, cam)
         for sp in self.level.springs:
@@ -373,6 +510,10 @@ class PlayScene(Scene):
             c.draw(surface, cam)
         for it in self.level.items:
             it.draw(surface, cam)
+        for fi in self.level.fish_items:
+            fi.draw(surface, cam)
+        for ri in self.level.rain_items:
+            ri.draw(surface, cam)
         for st in self.level.stars:
             st.draw(surface, cam)
         if self.level.goal:
@@ -381,8 +522,12 @@ class PlayScene(Scene):
             e.draw(surface, cam)
         for pr in self.level.projectiles:
             pr.draw(surface, cam)
+        for fr in self.level.friendly:
+            fr.draw(surface, cam)
         self.level.player.draw(surface, cam)
         self.particles.draw(surface, cam)
+        if self.rain_t > 0:                      # Flugzeug beim Fischregen (Bildschirm-fix)
+            surface.blit(self.game.assets.plane, (int(self.plane_x), 24))
         self._draw_hud(surface)
         if self.mode == "complete":
             self._center_text(surface, "Geschafft!", self.big_font, (255, 240, 120))
@@ -399,16 +544,26 @@ class PlayScene(Scene):
         surface.blit(font.render(text, True, UI_SHADOW), rect.move(3, 3))
         surface.blit(img, rect)
 
+    def _stat(self, surface, icon, text, y, color=WHITE):
+        surface.blit(icon, (10, y))
+        self._text(surface, text, self.font, (10 + icon.get_width() + 6, y - 2), color)
+
     def _draw_hud(self, surface):
         p = self.level.player
-        self._text(surface, f"Münzen {p.coins}/{self.level.total_coins}",
-                   self.font, (10, 8), (255, 240, 120))
-        self._text(surface, f"Leben {self.game.lives}", self.font, (10, 36))
+        self._stat(surface, self.icons["coin"], f"{p.coins}/{self.level.total_coins}",
+                   8, (255, 240, 120))
+        self._stat(surface, self.icons["heart"], f"{self.game.lives}", 34)
+        y = 60
         if self.level.total_stars:
-            self._text(surface, f"Sterne {self.level.stars_collected}/{self.level.total_stars}",
-                       self.font, (10, 64), (255, 232, 120))
+            self._stat(surface, self.icons["star"],
+                       f"{self.level.stars_collected}/{self.level.total_stars}", y, (255, 232, 120))
+            y += 26
         m, s = divmod(int(self.elapsed), 60)
-        self._text(surface, f"Zeit {m}:{s:02d}", self.font, (10, 92), (200, 220, 245))
+        self._stat(surface, self.icons["clock"], f"{m}:{s:02d}", y, (200, 220, 245))
+        # Wurf-Indikator, wenn Fisch-Powerup aktiv
+        if p.can_throw:
+            fish = self.icons["fish"]
+            surface.blit(fish, (VIRTUAL_W - fish.get_width() - 12, VIRTUAL_H - fish.get_height() - 12))
         name = self.font.render(self.level.name, True, WHITE)
         self._text(surface, self.level.name, self.font, (VIRTUAL_W - name.get_width() - 10, 8))
         boss = self.level.boss

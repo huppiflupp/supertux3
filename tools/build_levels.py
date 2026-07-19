@@ -116,6 +116,10 @@ def level1():
     b.e("growth", 27, 8); b.e("spring", 88, FLOOR)
     for ex in (14, 40, 58, 82, 106, 138):
         b.e("snowball", ex, FLOOR)
+    b.e("fish", 12, 12)                       # Fisch-Wurf-Powerup
+    b.e("box", 24, 11); b.e("box", 25, 11)    # zerstörbare Loot-Boxen
+    b.e("shooter", 52, FLOOR)                 # schießende Pflanze
+    b.e("fishrain", 118, 9)                   # Fischregen-Powerup
     b.e("checkpoint", 70, FLOOR); b.e("goal", 146, GROUND - 4)
     for t in (5, 24, 52, 90, 125):
         b.prop("bush", t)

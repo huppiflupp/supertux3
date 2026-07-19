@@ -13,7 +13,8 @@ from .engine.spritesheet import load_image, slice_strip, slice_grid
 # --- geteilte Sprite-Spezifikation (HD, 32px-Kacheln) -------------------
 PENGU_FW, PENGU_FH = 40, 48
 PENGU_BIG_FW, PENGU_BIG_FH = 60, 72
-PENGU_LAYOUT = ["idle0", "idle1", "walk0", "walk1", "walk2", "walk3", "jump", "fall", "duck"]
+PENGU_LAYOUT = ["idle0", "idle1", "walk0", "walk1", "walk2", "walk3",
+                "jump", "fall", "duck", "throw"]
 COIN_FW, COIN_FH = 24, 24
 SNOWBALL_FW, SNOWBALL_FH = 36, 32
 SNOWBALL_LAYOUT = ["walk0", "walk1", "flat"]
@@ -52,6 +53,7 @@ class Assets:
             "jump": [named.get("jump")],
             "fall": [named.get("fall")],
             "duck": [named.get("duck")],
+            "throw": [named.get("throw")],
         }
         return {k: [f for f in v if f is not None] or [frames[0]] for k, v in d.items()}
 
@@ -85,6 +87,13 @@ class Assets:
 
         self.item_grow = load_image(IMAGE_DIR / "collectibles" / "grow.png")
         self.star = load_image(IMAGE_DIR / "collectibles" / "star.png")
+        self.fish = load_image(IMAGE_DIR / "collectibles" / "fish.png")
+        self.plant = slice_strip(load_image(IMAGE_DIR / "enemies" / "plant.png"), 28, 28)
+        self.fireball = load_image(IMAGE_DIR / "enemies" / "fireball.png")
+        self.box = load_image(IMAGE_DIR / "props" / "box.png")
+        self.plane = load_image(IMAGE_DIR / "props" / "plane.png")
+        self.heart = load_image(IMAGE_DIR / "ui" / "heart.png")
+        self.clock = load_image(IMAGE_DIR / "ui" / "clock.png")
         self.spring = slice_strip(load_image(IMAGE_DIR / "props" / "spring.png"), SPRING_FW, SPRING_FH)
         self.checkpoint = slice_strip(load_image(IMAGE_DIR / "props" / "checkpoint.png"),
                                       CHECKPOINT_FW, CHECKPOINT_FH)

@@ -103,18 +103,33 @@ def _sheet(frames, fw, fh):
 # =========================================================================
 #  Spieler „Pengu"  (40x48)
 # =========================================================================
-def draw_pengu(lf=0.0, rf=0.0, llift=0.0, rlift=0.0, arms_up=False,
+def _flipper(p, box, top):
+    """Zeichnet eine Flosse als gerundete Kontur+Fläche mit Glanz."""
+    x0, y0, x1, y1 = box
+    p.ellipse([x0 - .8, y0 - .8, x1 + .8, y1 + .8], fill=OUT)
+    p.ellipse([x0, y0, x1, y1], fill=BODY)
+    p.ellipse([x0 + .5, y0 + 1, x1 - .6, (y0 + y1) / 2], fill=BODY_HI)
+
+
+def draw_pengu(lf=0.0, rf=0.0, llift=0.0, rlift=0.0, arm="down",
                squash=0.0, blink=False, breathe=0.0) -> Image.Image:
     p = Pen(40, 48)
     top = 5 + squash - breathe
     bot = 46
 
-    # Flossen
-    ay = top + 8 - (7 if arms_up else 0)
-    for fx0, fx1 in ((2.5, 8), (32, 37.5)):
-        p.ellipse([fx0 - .8, ay - .8, fx1 + .8, ay + 14 + .8], fill=OUT)
-        p.ellipse([fx0, ay, fx1, ay + 14], fill=BODY)
-        p.ellipse([fx0 + .5, ay + 1, fx1 - 1.5, ay + 8], fill=BODY_HI)
+    # Flossen – Pose bestimmt Haltung (im Ruhezustand hängen sie am Körper)
+    t = top
+    POSES = {
+        "down":  ((3.0, t + 10, 8.0, t + 24), (32.0, t + 10, 37.0, t + 24)),
+        "up":    ((0.5, t + 2, 6.0, t + 15), (34.0, t + 2, 39.5, t + 15)),
+        "walkA": ((2.0, t + 12, 7.0, t + 25), (33.0, t + 7, 38.0, t + 20)),
+        "walkB": ((3.0, t + 7, 8.0, t + 20), (32.0, t + 12, 37.0, t + 25)),
+        "fall":  ((0.5, t + 6, 6.0, t + 19), (34.0, t + 6, 39.5, t + 19)),
+        "throw": ((3.0, t + 11, 8.0, t + 24), (33.5, t - 3, 40.0, t + 9)),
+    }
+    lbox, rbox = POSES.get(arm, POSES["down"])
+    _flipper(p, lbox, top)
+    _flipper(p, rbox, top)
 
     # Körper-Silhouette + Kontur
     p.ellipse([5, top - 1, 35, bot + 1], fill=OUT)
@@ -178,15 +193,16 @@ def draw_pengu(lf=0.0, rf=0.0, llift=0.0, rlift=0.0, arms_up=False,
 
 def _pengu_frames():
     return [
-        draw_pengu(),                                  # idle0
-        draw_pengu(blink=True, breathe=1),             # idle1
-        draw_pengu(lf=-2, llift=3, rf=2),              # walk0
-        draw_pengu(),                                  # walk1
-        draw_pengu(lf=2, rf=-2, rlift=3),              # walk2
-        draw_pengu(breathe=1),                         # walk3
-        draw_pengu(lf=1, rf=-1, llift=3, rlift=3, arms_up=True),  # jump
-        draw_pengu(lf=-3, rf=3),                       # fall
-        draw_pengu(squash=8),                          # duck
+        draw_pengu(arm="down"),                             # idle0
+        draw_pengu(arm="down", blink=True, breathe=1),      # idle1
+        draw_pengu(lf=-2, llift=3, rf=2, arm="walkA"),      # walk0
+        draw_pengu(arm="down"),                             # walk1
+        draw_pengu(lf=2, rf=-2, rlift=3, arm="walkB"),      # walk2
+        draw_pengu(arm="down", breathe=1),                  # walk3
+        draw_pengu(lf=1, rf=-1, llift=3, rlift=3, arm="up"),  # jump
+        draw_pengu(lf=-3, rf=3, arm="fall"),                # fall
+        draw_pengu(squash=8, arm="down"),                   # duck
+        draw_pengu(arm="throw"),                            # throw
     ]
 
 
@@ -602,6 +618,111 @@ def gen_star():
     _save(p.result(), "collectibles", "star.png")
 
 
+# =========================================================================
+#  HUD-Icons, Fisch, Schützen-Pflanze, Loot-Box, Flugzeug, Feuerball
+# =========================================================================
+def gen_hud_icons():
+    # Herz (Leben)
+    p = Pen(16, 16)
+    RED = (232, 72, 84, 255); RED_HI = (255, 140, 150, 255)
+    p.ellipse([2, 3, 8, 9], fill=RED); p.ellipse([8, 3, 14, 9], fill=RED)
+    p.poly([(2.5, 7), (13.5, 7), (8, 14)], fill=RED)
+    p.ellipse([4, 4, 7, 7], fill=RED_HI)
+    _save(p.result(), "ui", "heart.png")
+    # Uhr (Zeit)
+    p = Pen(16, 16)
+    p.ellipse([1, 1, 15, 15], fill=(60, 66, 84, 255))
+    p.ellipse([2, 2, 14, 14], fill=(232, 238, 248, 255))
+    p.ellipse([2, 2, 14, 14], outline=(120, 128, 146, 255))
+    p.line([(8, 8), (8, 4)], width=1.4, fill=(40, 46, 62, 255))
+    p.line([(8, 8), (11, 9)], width=1.4, fill=(40, 46, 62, 255))
+    _save(p.result(), "ui", "clock.png")
+
+
+def gen_fish():
+    p = Pen(20, 14)
+    BLU = (96, 176, 224, 255); BLU_LO = (60, 130, 180, 255); BLU_HI = (170, 220, 245, 255)
+    p.ellipse([1, 2, 15, 12], fill=OUT)
+    p.ellipse([2, 3, 15, 11], fill=BLU)
+    p.ellipse([3, 3.5, 12, 7.5], fill=BLU_HI)
+    p.ellipse([6, 6, 14, 11], fill=BLU_LO)
+    p.poly([(14, 7), (20, 2), (20, 12)], fill=BLU)         # Schwanz
+    p.poly([(15, 7), (19, 4), (19, 10)], fill=BLU_LO)
+    p.ellipse([4, 5, 6.5, 7.5], fill=WHITE)                # Auge
+    p.ellipse([4.6, 5.6, 6, 7], fill=PUP)
+    _save(p.result(), "collectibles", "fish.png")
+
+
+def draw_plant(open_mouth: bool) -> Image.Image:
+    p = Pen(28, 28)
+    GREEN = (74, 168, 78, 255); GREEN_LO = (52, 130, 60, 255)
+    RED = (222, 74, 70, 255); RED_LO = (170, 44, 44, 255)
+    # Stiel + Blätter
+    p.rect([12, 16, 16, 28], fill=GREEN)
+    p.line([(14, 18), (14, 27)], width=1, fill=GREEN_LO)
+    p.ellipse([4, 18, 13, 24], fill=GREEN); p.ellipse([15, 18, 24, 24], fill=GREEN_LO)
+    # Kopf
+    p.ellipse([5, 3, 23, 19], fill=OUT)
+    p.ellipse([6, 4, 22, 18], fill=RED)
+    p.ellipse([8, 5, 18, 12], fill=(240, 120, 110, 255))
+    if open_mouth:
+        p.poly([(9, 11), (19, 11), (14, 17)], fill=(60, 20, 20, 255))   # offener Schlund
+        for x in (10, 13, 16):
+            p.poly([(x, 11), (x + 1.5, 13.5), (x + 3, 11)], fill=WHITE)  # Zähne
+    else:
+        p.line([(9, 12), (19, 12)], width=1.2, fill=RED_LO)
+    for ex in (10, 18):
+        p.ellipse([ex - 2, 6, ex + 2, 10], fill=WHITE)
+        p.ellipse([ex - .6, 7, ex + 1.4, 9.5], fill=PUP)
+    _save_none = None
+    return p.result()
+
+
+def gen_plant():
+    _save(_sheet([draw_plant(False), draw_plant(True)], 28, 28), "enemies", "plant.png")
+
+
+def gen_box():
+    p = Pen(32, 32)
+    G = (240, 190, 60, 255); G_LO = (196, 146, 30, 255); G_HI = (255, 224, 130, 255)
+    p.rounded([1, 1, 31, 31], 3, fill=G_LO)
+    p.rounded([2, 2, 30, 30], 3, fill=G)
+    p.rounded([3, 3, 29, 12], 2, fill=G_HI)
+    for cx, cy in ((5, 5), (27, 5), (5, 27), (27, 27)):
+        p.ellipse([cx - 1.5, cy - 1.5, cx + 1.5, cy + 1.5], fill=G_LO)
+    # Fragezeichen
+    p.arc([11, 8, 21, 18], 20, 300, width=3, fill=(120, 80, 10, 255))
+    p.line([(16, 16), (16, 20)], width=3, fill=(120, 80, 10, 255))
+    p.ellipse([14.5, 22, 17.5, 25], fill=(120, 80, 10, 255))
+    _save(p.result(), "props", "box.png")
+
+
+def gen_plane():
+    p = Pen(56, 28)
+    RED = (216, 76, 78, 255); RED_LO = (168, 48, 52, 255)
+    p.ellipse([6, 10, 46, 22], fill=OUT)
+    p.ellipse([7, 11, 45, 21], fill=RED)                 # Rumpf
+    p.ellipse([8, 12, 30, 17], fill=(240, 130, 130, 255))
+    p.poly([(20, 16), (34, 4), (40, 6), (30, 16)], fill=(230, 210, 120, 255))  # Flügel
+    p.poly([(6, 12), (0, 8), (2, 16)], fill=RED_LO)      # Heck
+    # Cockpit + Pilot (kleiner Pinguin)
+    p.ellipse([30, 6, 42, 16], fill=(180, 220, 245, 200))
+    p.ellipse([32, 7, 40, 15], fill=BODY)
+    p.ellipse([33, 9, 37, 13], fill=BELLY)
+    # Propeller
+    p.line([(46, 10), (46, 22)], width=2, fill=(60, 66, 84, 255))
+    p.ellipse([44, 14, 48, 18], fill=(40, 44, 60, 255))
+    _save(p.result(), "props", "plane.png")
+
+
+def gen_fireball():
+    p = Pen(14, 14)
+    p.ellipse([1, 1, 13, 13], fill=(230, 120, 30, 255))
+    p.ellipse([2, 2, 12, 12], fill=(255, 176, 46, 255))
+    p.ellipse([3, 3, 9, 9], fill=(255, 232, 140, 255))
+    _save(p.result(), "enemies", "fireball.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_tileset()
@@ -617,6 +738,12 @@ def main():
     gen_checkpoint()
     gen_grow()
     gen_star()
+    gen_hud_icons()
+    gen_fish()
+    gen_plant()
+    gen_box()
+    gen_plane()
+    gen_fireball()
     gen_props()
     print("Fertig.")
 

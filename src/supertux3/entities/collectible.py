@@ -47,6 +47,44 @@ class GrowItem(Entity):
         surface.blit(self.img, (round(self.x) - ox, round(self.y) - oy))
 
 
+class FishItem(Entity):
+    """Fisch-Powerup: verleiht die Wurffähigkeit."""
+
+    def __init__(self, x, y, assets):
+        img = assets.fish
+        super().__init__(x, y, img.get_width(), img.get_height())
+        self.img = img
+        self.base_y = float(y)
+        self.t = (x * 0.1) % (math.pi * 2)
+
+    def update(self, dt, level):
+        self.t += dt * 3.0
+        self.y = self.base_y + math.sin(self.t) * 4.0
+
+    def draw(self, surface, camera):
+        ox, oy = camera.offset
+        surface.blit(self.img, (round(self.x) - ox, round(self.y) - oy))
+
+
+class FishRainItem(Entity):
+    """Zeitlich begrenztes Powerup: löst den Fischregen aus."""
+
+    def __init__(self, x, y, assets):
+        img = assets.plane
+        super().__init__(x, y, img.get_width(), img.get_height())
+        self.img = img
+        self.base_y = float(y)
+        self.t = (x * 0.07) % (math.pi * 2)
+
+    def update(self, dt, level):
+        self.t += dt * 2.0
+        self.y = self.base_y + math.sin(self.t) * 5.0
+
+    def draw(self, surface, camera):
+        ox, oy = camera.offset
+        surface.blit(self.img, (round(self.x) - ox, round(self.y) - oy))
+
+
 class Star(Entity):
     """Sammel-Stern (3 pro Level, für Bestwertung)."""
 

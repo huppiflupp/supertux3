@@ -75,6 +75,28 @@ class Spring(Entity):
         surface.blit(img, (round(self.x) - ox, self.rect.bottom - img.get_height() - oy))
 
 
+class Box(Entity):
+    """Zerstörbare ?-Box: von unten anschlagen -> zufälliges Item."""
+    solid = True
+
+    def __init__(self, x, y, assets):
+        img = assets.box
+        super().__init__(x, y, img.get_width(), img.get_height())
+        self.img = img
+        self.bump = 0.0
+
+    def update(self, dt, level):
+        self.bump = max(0.0, self.bump - dt * 6)
+
+    def hit(self):
+        self.bump = 1.0
+
+    def draw(self, surface, camera):
+        ox, oy = camera.offset
+        off = int(self.bump * 5)
+        surface.blit(self.img, (round(self.x) - ox, round(self.y) - off - oy))
+
+
 class Checkpoint(Entity):
     def __init__(self, x, y, assets):
         frames = assets.checkpoint

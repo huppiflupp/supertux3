@@ -25,9 +25,9 @@ import pygame
 from .tilemap import Tilemap
 from ..settings import TILE, LEVEL_DIR, USER_LEVEL_DIR
 from ..entities.player import Player, FORM
-from ..entities.enemy import Snowball, Spiky, Flyer
-from ..entities.collectible import Coin, GrowItem, Goal, Star
-from ..entities.platform import MovingPlatform, Spring, Checkpoint
+from ..entities.collectible import Coin, GrowItem, Goal, Star, FishItem, FishRainItem
+from ..entities.platform import MovingPlatform, Spring, Checkpoint, Box
+from ..entities.enemy import Snowball, Spiky, Flyer, Shooter
 from ..entities.boss import Boss
 
 # Theme -> (Hintergrund, Musik)
@@ -62,7 +62,11 @@ class Level:
         self.springs: list[Spring] = []
         self.checkpoints: list[Checkpoint] = []
         self.platforms: list[MovingPlatform] = []
-        self.projectiles: list = []
+        self.projectiles: list = []     # Gegner-Projektile (verletzen)
+        self.friendly: list = []        # Fische (plätten Gegner)
+        self.boxes: list[Box] = []
+        self.fish_items: list[FishItem] = []
+        self.rain_items: list[FishRainItem] = []
         self.boss = None
         self.goal: Goal | None = None
 
@@ -89,6 +93,17 @@ class Level:
             elif k == "flyer":
                 patrol = e[3] if len(e) > 3 else 6
                 self.enemies.append(Flyer(e[1] * TILE, e[2] * TILE, A, patrol))
+            elif k == "shooter":
+                sh = Shooter(e[1] * TILE, 0, A); sh.y = (e[2] + 1) * TILE - sh.h
+                self.enemies.append(sh)
+            elif k == "box":
+                self.boxes.append(Box(e[1] * TILE, e[2] * TILE, A))
+            elif k == "fish":
+                fw = A.fish.get_width(); fh = A.fish.get_height()
+                self.fish_items.append(FishItem(e[1] * TILE + (TILE - fw) // 2,
+                                                e[2] * TILE + (TILE - fh) // 2, A))
+            elif k == "fishrain":
+                self.rain_items.append(FishRainItem(e[1] * TILE, e[2] * TILE, A))
             elif k == "spring":
                 self.springs.append(Spring(e[1] * TILE, (e[2] + 1) * TILE, A))
             elif k == "checkpoint":
@@ -117,6 +132,9 @@ class Level:
 
     def platform_rects(self):
         return [p.rect for p in self.platforms]
+
+    def solid_entity_rects(self):
+        return [p.rect for p in self.platforms] + [b.rect for b in self.boxes]
 
     @property
     def width_px(self) -> int:

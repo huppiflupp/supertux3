@@ -91,6 +91,41 @@ class Spiky(_Walker):
                            self.rect.bottom - img.get_height() - oy))
 
 
+class Shooter(Entity):
+    """Stationäre „Feuerblume": feuert periodisch Bälle Richtung Spieler.
+
+    Nicht stampfbar (Kontakt verletzt) – mit einem geworfenen Fisch besiegbar.
+    """
+    stompable = False
+
+    def __init__(self, x, y, assets):
+        super().__init__(x, y, 26, 26)
+        self.assets = assets
+        self.closed = assets.plant[0]
+        self.open = assets.plant[1] if len(assets.plant) > 1 else assets.plant[0]
+        self.fire_t = 1.4
+        self.mouth_t = 0.0
+
+    def update(self, dt, level):
+        self.mouth_t = max(0.0, self.mouth_t - dt)
+        self.fire_t -= dt
+        if self.fire_t <= 0:
+            self.fire_t = 2.4
+            self.mouth_t = 0.5
+            from .projectiles import Projectile
+            d = 1 if level.player.cx > self.cx else -1
+            level.projectiles.append(
+                Projectile(self.cx - 7, self.cy - 6, d * 165.0, -70.0,
+                           self.assets.fireball, grav=480.0))
+            level.game.audio.play("throw")
+
+    def draw(self, surface, camera):
+        ox, oy = camera.offset
+        img = self.open if self.mouth_t > 0 else self.closed
+        surface.blit(img, (round(self.x) - (img.get_width() - self.w) // 2 - ox,
+                           self.rect.bottom - img.get_height() - oy))
+
+
 class Flyer(Entity):
     """Flieger – schwebt in einer Sinuswelle, ist stampfbar."""
     stompable = True
