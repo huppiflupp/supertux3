@@ -25,7 +25,8 @@ import pygame
 from .tilemap import Tilemap
 from ..settings import TILE, LEVEL_DIR, USER_LEVEL_DIR
 from ..entities.player import Player, FORM
-from ..entities.collectible import Coin, GrowItem, Goal, Star, FishItem, FishRainItem
+from ..entities.collectible import (Coin, GrowItem, Goal, Star, FishItem,
+                                    FishRainItem, SecretDoor)
 from ..entities.platform import MovingPlatform, Spring, Checkpoint, Box
 from ..entities.buddy import TurtleItem, GiraffeItem, Giraffe, FriendItem, Friend
 from ..entities.enemy import Snowball, Spiky, Flyer, Shooter, Cat, Alien, Robot
@@ -80,6 +81,7 @@ class Level:
         self.friends: list[Friend] = []         # aktive kämpfende Freunde
         self.boss = None
         self.goal: Goal | None = None
+        self.secret_door = None
 
         A = game.assets
         for e in data.get("entities", []):
@@ -150,6 +152,9 @@ class Level:
                 self.enemies.append(self.boss)
             elif k == "goal":
                 self.goal = Goal(e[1] * TILE, (e[2] + 1) * TILE, A)
+            elif k == "secret":
+                sid = e[3] if len(e) > 3 else "secret1.json"
+                self.secret_door = SecretDoor(e[1] * TILE, (e[2] + 1) * TILE, sid)
 
         self.props: list[tuple[pygame.Surface, int, int]] = []
         for p in data.get("props", []):

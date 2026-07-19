@@ -112,6 +112,38 @@ class Star(Entity):
                            int(self.cy - img.get_height() / 2 - oy)))
 
 
+class SecretDoor(Entity):
+    """Versteckter Ausgang: führt in ein Geheimlevel (schimmerndes Portal)."""
+
+    def __init__(self, x: float, y: float, secret_id: str = "secret1.json"):
+        super().__init__(x, y - 40, 28, 40)
+        self.secret_id = secret_id
+        self.t = 0.0
+
+    def update(self, dt: float, level) -> None:
+        self.t += dt * 4.0
+
+    def draw(self, surface: pygame.Surface, camera) -> None:
+        ox, oy = camera.offset
+        cx = int(self.cx - ox)
+        cy = int(self.cy - oy)
+        r = self.rect
+        surf = pygame.Surface((r.w + 12, r.h + 12), pygame.SRCALPHA)
+        for i, a in enumerate((60, 110, 200)):
+            rr = (r.w // 2 + 6) - i * 4
+            col = (150, 90, 220, a)
+            pygame.draw.ellipse(surf, col, (surf.get_width() // 2 - rr,
+                                            surf.get_height() // 2 - int(rr * 1.4),
+                                            rr * 2, int(rr * 2.8)))
+        surface.blit(surf, (cx - surf.get_width() // 2, cy - surf.get_height() // 2))
+        # Funkeln
+        for k in range(3):
+            ang = self.t + k * 2.1
+            sx = cx + int(math.cos(ang) * 10)
+            sy = cy + int(math.sin(ang * 1.3) * 16)
+            pygame.draw.circle(surface, (240, 220, 255), (sx, sy), 1)
+
+
 class Goal(Entity):
     """Zielfahne am Levelende."""
 

@@ -28,11 +28,13 @@ def _sky_gradient(w, h):
 
 
 class PlayScene(Scene):
-    def __init__(self, game, index: int = 0, level_name: str | None = None):
+    def __init__(self, game, index: int = 0, level_name: str | None = None,
+                 secret: bool = False):
         super().__init__(game)
-        self.custom = level_name is not None
+        self.secret = secret
+        self.custom = level_name is not None and not secret
         self.index = index
-        self.level_name = level_name if self.custom else LEVEL_FILES[index]
+        self.level_name = level_name if (self.custom or secret) else LEVEL_FILES[index]
 
     def on_enter(self):
         if not self.custom:
@@ -157,6 +159,8 @@ class PlayScene(Scene):
                 g.update(dt, lvl)
             if self.rain_t > 0:
                 self._update_fish_rain(dt)
+            if lvl.secret_door:
+                lvl.secret_door.update(dt, lvl)
             self.weather.update(dt)
             self.elapsed += dt
 
@@ -410,6 +414,10 @@ class PlayScene(Scene):
         if self.mode == "play" and lvl.goal and prect.colliderect(lvl.goal.rect):
             self._win()
 
+        # versteckter Ausgang -> Geheimlevel
+        if self.mode == "play" and lvl.secret_door and prect.colliderect(lvl.secret_door.rect):
+            self._enter_secret(lvl.secret_door.secret_id)
+
     def _hurt_player(self, p):
         out = p.take_hit()
         if out == "die":
@@ -427,6 +435,16 @@ class PlayScene(Scene):
         p = self.level.player
         self.particles.sparkle(p.rect.centerx, p.rect.centery, color=(255, 240, 140), n=30)
         self.game.audio.play("win")
+
+    def _enter_secret(self, sid):
+        if not self.custom and not self.secret:
+            self.game.record_result(self.index, self.level.player.coins,
+                                    self.level.stars_collected, self.elapsed)
+            self.game.unlocked = max(self.game.unlocked, self.index + 1)
+        self.game.find_secret(sid)
+        self.particles.sparkle(self.level.player.cx, self.level.player.cy,
+                               color=(200, 160, 255), n=30)
+        self.game.scenes.switch(PlayScene(self.game, level_name=sid, secret=True))
 
     def _defeat_enemy(self, e):
         if getattr(e, "is_boss", False):
@@ -499,6 +517,10 @@ class PlayScene(Scene):
             from .editor import EditorScene
             self.game.scenes.switch(EditorScene(self.game, self.level_name))
             return
+        if self.secret:
+            from .worldmap import WorldMapScene
+            self.game.scenes.switch(WorldMapScene(self.game, self.game.level_index))
+            return
         if self.game.lives <= 0:
             from .gameover import ResultScene
             self.game.scenes.switch(ResultScene(self.game, won=False,
@@ -523,6 +545,10 @@ class PlayScene(Scene):
         if self.custom:
             from .editor import EditorScene
             self.game.scenes.switch(EditorScene(self.game, self.level_name))
+            return
+        if self.secret:                       # Geheimlevel geschafft -> Karte
+            from .worldmap import WorldMapScene
+            self.game.scenes.switch(WorldMapScene(self.game, self.game.level_index))
             return
         self.game.record_result(self.index, self.level.player.coins,
                                 self.level.stars_collected, self.elapsed)
@@ -578,6 +604,8 @@ class PlayScene(Scene):
             st.draw(surface, cam)
         if self.level.goal:
             self.level.goal.draw(surface, cam)
+        if self.level.secret_door:
+            self.level.secret_door.draw(surface, cam)
         for g in self.level.giraffes:
             g.draw(surface, cam)
         for fr2 in self.level.friends:

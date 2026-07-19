@@ -201,6 +201,7 @@ def level3():
     b.e("flyer", 35, 7, 6); b.e("flyer", 90, 6, 8); b.e("flyer", 135, 8, 6)
     b.e("spring", 10, FLOOR); b.e("spring", 160, FLOOR)
     b.e("friend", 8, 12)                       # kämpfender Freund-Begleiter
+    b.e("secret", 66, 10)                       # versteckter Ausgang -> Geheimlevel
     b.e("checkpoint", 78, FLOOR); b.e("goal", 166, FLOOR)
     for t, y in [(10, 1), (44, 2), (90, 1), (130, 2)]:
         b.prop("cloud", t, y)
@@ -728,8 +729,23 @@ def level24():
     b.dump(LV / "level24.json", "Über den Dächern", "city")
 
 
+# --- Geheimlevel (Bonus-Schatzkammer) -----------------------------------
+def secret1():
+    b = B(64)
+    b.ground(0, 63, ch="S", fill="S")
+    for x0, x1, y in [(10, 14, 11), (20, 24, 9), (30, 34, 11), (42, 46, 9)]:
+        b.plat(x0, x1, y, "B")
+    for cx in range(6, 58, 3):
+        b.arc(cx, 10)                          # viele Münzen
+    b.e("star", 12, 10); b.e("star", 32, 10); b.e("star", 44, 8)
+    b.e("growth", 22, 8); b.e("fish", 6, 12)
+    b.e("goal", 60, FLOOR)
+    b.dump(LV / "secret1.json", "Geheime Schatzkammer", "cave")
+
+
 def main():
     print("Baue Level ->", LV)
+    secret1()
     for fn in (level1, level2, level3, level4, level5, level6, level7, level8,
                level9, level10, level11, level12, level13, level14, level15,
                level16, level17, level18, level19, level20, level21,

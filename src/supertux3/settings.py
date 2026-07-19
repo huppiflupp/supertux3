@@ -98,3 +98,6 @@ START_LIVES = 3
 
 # Level-Reihenfolge (Dateien in levels/)
 LEVEL_FILES = [f"level{i}.json" for i in range(1, 25)]
+
+# Geheimlevel (nicht in der linearen Reihe; via verstecktem Ausgang erreichbar)
+SECRET_LEVELS = ["secret1.json"]

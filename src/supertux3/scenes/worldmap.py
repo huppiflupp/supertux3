@@ -443,6 +443,11 @@ class WorldMapScene(Scene):
         total = sum(self.game.best_stars(i) for i in range(len(LEVEL_FILES)))
         self._text(surface, f"Sterne gesamt: {total}/{len(LEVEL_FILES) * 3}",
                    self.small, (VIRTUAL_W - 240, 8), (255, 232, 150))
+        from ..settings import SECRET_LEVELS
+        found = len(self.game.secrets)
+        col = (210, 170, 255) if found else (130, 120, 150)
+        self._text(surface, f"Geheim: {found}/{len(SECRET_LEVELS)}",
+                   self.small, (VIRTUAL_W - 240, 54), col)
         bt = self.game.best_time(self.sel)
         if bt > 0:
             m, s = divmod(int(bt), 60)

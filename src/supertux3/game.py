@@ -63,6 +63,7 @@ class Game:
         from .engine import controls
         self.keys = controls.load_keys(self.save_data)
         self.music_choice = self.save_data.get("music_choice") or None
+        self.secrets = set(self.save_data.get("secrets", []))
         want_fs = self.opts.get("fullscreen")
         if want_fs is None:
             want_fs = self.save_data.get("fullscreen", False)
@@ -115,7 +116,12 @@ class Game:
             bt[key] = time if prev <= 0 else min(prev, time)
         self.save_progress()
 
+    def find_secret(self, sid: str) -> None:
+        self.secrets.add(sid)
+        self.save_progress()
+
     def save_progress(self) -> None:
+        self.save_data["secrets"] = sorted(self.secrets)
         self.save_data["unlocked"] = self.unlocked
         self.save_data["music_volume"] = self.audio.music_volume
         self.save_data["muted"] = self.audio.muted

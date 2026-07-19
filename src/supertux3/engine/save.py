@@ -22,6 +22,7 @@ _DEFAULT = {
     "quality": DEFAULT_QUALITY,   # "smooth" | "fast"
     "fps": DEFAULT_FPS,           # 30 | 60
     "fullscreen": False,
+    "secrets": [],                # gefundene Geheimlevel-IDs
 }
 
 
