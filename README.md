@@ -6,26 +6,37 @@ Hügelwelt, Münzen, stampfbare Schneebälle, klassisches Sprung-Gameplay.
 
 ![Titel](assets/images/background/title_art.png)
 
-## Spielen (Entwicklung)
+## Schnellstart
 
 ```bash
+# 1. Repo holen
+git clone https://github.com/huppiflupp/supertux3
+cd supertux3
+
+# 2. Spielen (legt beim 1. Start automatisch ein venv an, installiert
+#    Abhängigkeiten, erzeugt fehlende Assets und startet das Spiel)
 ./run.sh
 ```
 
-Das Skript legt beim ersten Start ein venv an, installiert die Abhängigkeiten,
-erzeugt fehlende Assets und startet das Spiel.
+Voraussetzung: **Python 3.10+**. `run.sh` erledigt den Rest selbst.
+Für schwache Hardware: `./run.sh --quality fast --fps 30` (oder im Spiel
+**Optionen → Grafik = „Schnell"**).
 
-## Installieren (auch für andere Rechner / Kinder)
+## Fest installieren (auch für andere Rechner / Kinder)
 
-- **Ohne Root (jede Linux-Distro):** `bash packaging/install-user.sh` — legt
-  Menüeintrag „SuperTux3" + Icon an.
+```bash
+git clone https://github.com/huppiflupp/supertux3
+cd supertux3
+bash packaging/install-user.sh     # ohne Root: Menüeintrag "SuperTux3" + Icon
+```
+
+Danach startet „SuperTux3" aus dem Anwendungsmenü (oder per `supertux3` im Terminal).
+
 - **Systemweit:** `sudo make install`
 - **Flatpak / RPM / DEB** und **Raspberry Pi 400**: siehe
   [docs/packaging.md](docs/packaging.md) und [docs/pi400.md](docs/pi400.md).
 
 Zum Spielen genügt Python 3.10+ und `pygame` (empfohlen `pygame-ce`).
-Für schwache Hardware: `supertux3 --quality fast --fps 30` oder im Spiel
-**Optionen → Grafik = „Schnell"**.
 
 ## Steuerung
 
