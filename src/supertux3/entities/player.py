@@ -37,6 +37,7 @@ class Player(Entity):
         self.jump_active = False
         self.ducking = False
         self.invuln = 0.0
+        self.shield_t = 0.0        # Schutzschild-Restzeit (Schildkröten-Buddy)
         self.coins = 0
         self.scale_x = 1.0
         self.scale_y = 1.0
@@ -146,6 +147,8 @@ class Player(Entity):
 
         if self.invuln > 0:
             self.invuln -= dt
+        if self.shield_t > 0:
+            self.shield_t = max(0.0, self.shield_t - dt)
 
         # Squash/Stretch zurückfedern
         self.scale_x += (1.0 - self.scale_x) * min(1.0, 12 * dt)
@@ -192,7 +195,7 @@ class Player(Entity):
 
     def take_hit(self) -> str:
         """Gibt 'die', 'shrink' oder 'none' zurück."""
-        if self.invuln > 0 or self.dead:
+        if self.invuln > 0 or self.dead or self.shield_t > 0:
             return "none"
         self.can_throw = False       # Powerup geht bei Treffer verloren
         if self.power == "big":
