@@ -7,3 +7,4 @@ __pycache__/
 /tools/comfyui/ComfyUI/models/
 /tools/comfyui/ComfyUI/output/
 *.log
+.claude/
