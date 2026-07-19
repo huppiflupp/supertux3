@@ -117,6 +117,8 @@ def level1():
     for ex in (14, 40, 58, 82, 106, 138):
         b.e("snowball", ex, FLOOR)
     b.e("fish", 12, 12)                       # Fisch-Wurf-Powerup
+    b.e("turtle", 8, 12)                       # Schildkröte -> Schutzschild
+    b.e("giraffe", 55, 11)                     # Giraffe -> Brücke über Pit 63-66
     b.e("box", 24, 11); b.e("box", 25, 11)    # zerstörbare Loot-Boxen
     b.e("shooter", 52, FLOOR)                 # schießende Pflanze
     b.e("fishrain", 118, 9)                   # Fischregen-Powerup

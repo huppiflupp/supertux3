@@ -79,6 +79,16 @@ class Pen:
         return self.img.resize((self.w, self.h), Image.LANCZOS)
 
 
+def _c(deg):
+    import math
+    return math.cos(math.radians(deg))
+
+
+def _s(deg):
+    import math
+    return math.sin(math.radians(deg))
+
+
 def _lcg(seed):
     x = seed & 0x7FFFFFFF
     while True:
@@ -744,6 +754,101 @@ def gen_fireball():
     _save(p.result(), "enemies", "fireball.png")
 
 
+# =========================================================================
+#  Buddy-System: Schildkröte (Item), Giraffe (Begleiter), Schutzschild
+# =========================================================================
+def gen_turtle():
+    """Schildkröten-Powerup (28x26) – verleiht ein Schutzschild."""
+    p = Pen(28, 26)
+    SH = (86, 172, 92, 255); SH_LO = (54, 128, 66, 255); SH_HI = (150, 212, 128, 255)
+    SKIN = (216, 198, 122, 255); SKIN_LO = (176, 156, 90, 255)
+    # Beine
+    for cx in (8, 19):
+        p.ellipse([cx - 3, 18, cx + 3, 25], fill=OUT)
+        p.ellipse([cx - 2.4, 18, cx + 2.4, 24.2], fill=SKIN)
+        p.ellipse([cx - 2.4, 21, cx + 2.4, 24.2], fill=SKIN_LO)
+    # Kopf (rechts heraus)
+    p.ellipse([21, 9, 28, 18], fill=OUT)
+    p.ellipse([21.6, 9.6, 27.4, 17.4], fill=SKIN)
+    p.ellipse([22, 13, 27, 17.4], fill=SKIN_LO)
+    p.ellipse([24, 11.5, 26, 13.8], fill=WHITE)
+    p.ellipse([24.4, 12, 25.6, 13.4], fill=PUP)
+    # Panzer
+    p.ellipse([1, 2, 24, 22], fill=OUT)
+    p.ellipse([2, 3, 23, 21], fill=SH)
+    p.ellipse([3, 12, 22, 21], fill=SH_LO)
+    p.ellipse([4, 4, 20, 14], fill=SH_HI)
+    # Hexmuster mittig
+    hx, hy, r = 12.5, 12, 5.5
+    hexpts = [(hx + r * _c(a), hy + r * _s(a)) for a in (90, 150, 210, 270, 330, 30)]
+    p.poly(hexpts, outline=SH_LO)
+    for a in range(0, 360, 60):
+        x = hx + (r + 3) * _c(a); y = hy + (r + 3) * _s(a)
+        p.line([(hx + r * _c(a), hy + r * _s(a)), (x, y)], width=.8, fill=SH_LO)
+    _save(p.result(), "collectibles", "turtle.png")
+
+
+def gen_giraffe():
+    """Giraffen-Begleiter (44x60) – legt den Hals als Brücke über Lücken."""
+    p = Pen(44, 60)
+    Y = (240, 198, 98, 255); Y_LO = (204, 158, 66, 255); Y_HI = (252, 224, 152, 255)
+    SPOT = (170, 112, 54, 255); HOOF = (78, 58, 40, 255)
+    # Beine
+    for lx in (10, 16, 26, 32):
+        p.rect([lx - .6, 41, lx + 4.6, 58], fill=OUT)
+        p.rect([lx, 42, lx + 4, 58], fill=Y)
+        p.rect([lx, 42, lx + 1.8, 58], fill=Y_LO)
+        p.rect([lx - .3, 55.5, lx + 4.3, 58], fill=HOOF)
+    # Körper
+    p.ellipse([7, 29, 39, 49], fill=OUT)
+    p.ellipse([8, 30, 38, 48], fill=Y)
+    p.ellipse([9, 40, 37, 48], fill=Y_LO)
+    p.ellipse([11, 32, 30, 41], fill=Y_HI)
+    # Hals nach oben-rechts
+    p.poly([(28, 46), (36, 46), (40, 8), (33, 8)], fill=OUT)
+    p.poly([(29, 45), (35, 45), (39, 9), (34, 9)], fill=Y)
+    p.line([(34.5, 12), (30.5, 44)], width=1.4, fill=Y_LO)
+    # Mähne
+    p.line([(35, 10), (30, 44)], width=1.8, fill=SPOT)
+    # Kopf
+    p.ellipse([33, 3, 44, 14], fill=OUT)
+    p.ellipse([33.6, 3.6, 43.4, 13.4], fill=Y)
+    p.ellipse([39, 8, 44, 13], fill=Y_LO)           # Schnauze
+    p.ellipse([40.5, 10, 42.5, 12], fill=SPOT)       # Nüster
+    p.ellipse([36.5, 6.5, 39, 9], fill=WHITE)
+    p.ellipse([37, 7, 38.6, 8.8], fill=PUP)
+    # Ossikone
+    p.line([(36, 4), (35, 0.5)], width=1.4, fill=Y_LO)
+    p.ellipse([33.6, -0.6, 36.6, 2.4], fill=SPOT)
+    # Flecken auf Körper
+    for sx, sy in [(13, 34), (20, 37), (28, 39), (16, 41), (24, 33)]:
+        p.ellipse([sx, sy, sx + 5, sy + 5], fill=SPOT)
+    # kleines Schwänzchen
+    p.line([(8, 34), (4, 40)], width=1.4, fill=Y_LO)
+    p.ellipse([3, 39, 6, 42], fill=SPOT)
+    _save(p.result(), "collectibles", "giraffe.png")
+
+
+def gen_shield():
+    """Schutzschild-Blase (72x72) – wird rotierend um Pengu gezeichnet."""
+    p = Pen(72, 72)
+    cx = cy = 36
+    RING = (120, 232, 184, 235); RING2 = (188, 255, 224, 200)
+    DOT = (210, 255, 236, 235)
+    # zarte Füllung (Blase)
+    p.ellipse([cx - 30, cy - 30, cx + 30, cy + 30], fill=(140, 232, 202, 46))
+    # Ringe
+    p.ellipse([cx - 32, cy - 32, cx + 32, cy + 32], outline=RING, width=3 * SS)
+    p.ellipse([cx - 27, cy - 27, cx + 27, cy + 27], outline=RING2, width=2 * SS)
+    # rotierende Knoten (zeigen die Drehung)
+    for a in range(0, 360, 45):
+        x = cx + 32 * _c(a); y = cy + 32 * _s(a)
+        p.ellipse([x - 3, y - 3, x + 3, y + 3], fill=DOT)
+    # oberer Glanzbogen
+    p.arc([cx - 30, cy - 30, cx + 30, cy + 30], 200, 320, width=2, fill=(240, 255, 250, 210))
+    _save(p.result(), "collectibles", "shield.png")
+
+
 def main():
     print("Erzeuge HD-Pixel-Art ->", IMG)
     gen_tileset()
@@ -765,6 +870,9 @@ def main():
     gen_box()
     gen_plane()
     gen_fireball()
+    gen_turtle()
+    gen_giraffe()
+    gen_shield()
     gen_props()
     print("Fertig.")
 

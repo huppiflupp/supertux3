@@ -142,6 +142,12 @@ class PlayScene(Scene):
                 fi.update(dt, lvl)
             for ri in lvl.rain_items:
                 ri.update(dt, lvl)
+            for ti in lvl.turtle_items:
+                ti.update(dt, lvl)
+            for gi in lvl.giraffe_items:
+                gi.update(dt, lvl)
+            for g in lvl.giraffes:
+                g.update(dt, lvl)
             if self.rain_t > 0:
                 self._update_fish_rain(dt)
             self.elapsed += dt
@@ -259,6 +265,33 @@ class PlayScene(Scene):
             else:
                 rem.append(ri)
         lvl.rain_items = rem
+
+        # Schildkröte -> Schutzschild
+        rem = []
+        for ti in lvl.turtle_items:
+            if prect.colliderect(ti.rect):
+                from ..entities.buddy import SHIELD_DURATION
+                p.shield_t = SHIELD_DURATION
+                self.particles.sparkle(ti.cx, ti.cy, color=(150, 240, 190), n=20)
+                self.particles.text(ti.cx, ti.y, "Schild!", (150, 240, 190), self.font)
+                self.game.audio.play("grow")
+            else:
+                rem.append(ti)
+        lvl.turtle_items = rem
+
+        # Giraffe -> Brücken-Begleiter (nur einer gleichzeitig)
+        rem = []
+        for gi in lvl.giraffe_items:
+            if prect.colliderect(gi.rect):
+                from ..entities.buddy import Giraffe
+                if not lvl.giraffes:
+                    lvl.giraffes.append(Giraffe(p, self.game.assets))
+                self.particles.sparkle(gi.cx, gi.cy, color=(240, 198, 98), n=20)
+                self.particles.text(gi.cx, gi.y, "Giraffe!", (240, 198, 98), self.font)
+                self.game.audio.play("grow")
+            else:
+                rem.append(gi)
+        lvl.giraffe_items = rem
 
         # Loot-Box von unten anschlagen
         if p.bumped:
@@ -514,10 +547,16 @@ class PlayScene(Scene):
             fi.draw(surface, cam)
         for ri in self.level.rain_items:
             ri.draw(surface, cam)
+        for ti in self.level.turtle_items:
+            ti.draw(surface, cam)
+        for gi in self.level.giraffe_items:
+            gi.draw(surface, cam)
         for st in self.level.stars:
             st.draw(surface, cam)
         if self.level.goal:
             self.level.goal.draw(surface, cam)
+        for g in self.level.giraffes:
+            g.draw(surface, cam)
         for e in self.level.enemies:
             e.draw(surface, cam)
         for pr in self.level.projectiles:
@@ -525,6 +564,7 @@ class PlayScene(Scene):
         for fr in self.level.friendly:
             fr.draw(surface, cam)
         self.level.player.draw(surface, cam)
+        self._draw_shield(surface, cam)
         self.particles.draw(surface, cam)
         if self.rain_t > 0:                      # Flugzeug beim Fischregen (Bildschirm-fix)
             surface.blit(self.game.assets.plane, (int(self.plane_x), 24))
@@ -533,6 +573,23 @@ class PlayScene(Scene):
             self._center_text(surface, "Geschafft!", self.big_font, (255, 240, 120))
         if self.paused:
             self._draw_pause(surface)
+
+    def _draw_shield(self, surface, cam):
+        """Rotierendes, leicht blinkendes Schutzschild um Pengu."""
+        p = self.level.player
+        if p.shield_t <= 0:
+            return
+        # kurz vor Ablauf blinken lassen
+        if p.shield_t < 2.0 and int(p.shield_t * 10) % 2 == 0:
+            return
+        img = self.game.assets.shield
+        ang = (self.elapsed * 90) % 360
+        rot = pygame.transform.rotozoom(img, ang, 1.0)
+        ox, oy = cam.offset
+        cx = p.cx - ox
+        cy = p.cy - oy
+        surface.blit(rot, (int(cx - rot.get_width() / 2),
+                           int(cy - rot.get_height() / 2)))
 
     def _text(self, surface, text, font, pos, color=WHITE):
         surface.blit(font.render(text, True, UI_SHADOW), (pos[0] + 2, pos[1] + 2))

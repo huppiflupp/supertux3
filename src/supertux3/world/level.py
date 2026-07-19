@@ -27,6 +27,7 @@ from ..settings import TILE, LEVEL_DIR, USER_LEVEL_DIR
 from ..entities.player import Player, FORM
 from ..entities.collectible import Coin, GrowItem, Goal, Star, FishItem, FishRainItem
 from ..entities.platform import MovingPlatform, Spring, Checkpoint, Box
+from ..entities.buddy import TurtleItem, GiraffeItem, Giraffe
 from ..entities.enemy import Snowball, Spiky, Flyer, Shooter
 from ..entities.boss import Boss
 
@@ -67,6 +68,9 @@ class Level:
         self.boxes: list[Box] = []
         self.fish_items: list[FishItem] = []
         self.rain_items: list[FishRainItem] = []
+        self.turtle_items: list[TurtleItem] = []
+        self.giraffe_items: list[GiraffeItem] = []
+        self.giraffes: list[Giraffe] = []       # aktive Giraffen-Begleiter
         self.boss = None
         self.goal: Goal | None = None
 
@@ -104,6 +108,12 @@ class Level:
                                                 e[2] * TILE + (TILE - fh) // 2, A))
             elif k == "fishrain":
                 self.rain_items.append(FishRainItem(e[1] * TILE, e[2] * TILE, A))
+            elif k == "turtle":
+                tw = A.turtle.get_width(); th = A.turtle.get_height()
+                self.turtle_items.append(TurtleItem(e[1] * TILE + (TILE - tw) // 2,
+                                                    e[2] * TILE + (TILE - th) // 2, A))
+            elif k == "giraffe":
+                self.giraffe_items.append(GiraffeItem(e[1] * TILE, e[2] * TILE, A))
             elif k == "spring":
                 self.springs.append(Spring(e[1] * TILE, (e[2] + 1) * TILE, A))
             elif k == "checkpoint":
@@ -134,7 +144,11 @@ class Level:
         return [p.rect for p in self.platforms]
 
     def solid_entity_rects(self):
-        return [p.rect for p in self.platforms] + [b.rect for b in self.boxes]
+        rects = [p.rect for p in self.platforms] + [b.rect for b in self.boxes]
+        for g in self.giraffes:
+            if g.bridge_rect is not None:
+                rects.append(g.bridge_rect)
+        return rects
 
     @property
     def width_px(self) -> int:
